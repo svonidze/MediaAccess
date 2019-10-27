@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>netcoreapp3.0</TargetFramework>
+        <LangVersion>8</LangVersion>
+        <Nullable>enable</Nullable>
+        <RootNamespace>Telegram.FirstBot</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Telegram.Bot" Version="15.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Common.Collections\Common.Collections.csproj" />
+      <ProjectReference Include="..\Common.Cryptography\Common.Cryptography.csproj" />
+      <ProjectReference Include="..\Common.DateTime\Common.DateTime.csproj" />
+      <ProjectReference Include="..\Common.Exceptions\Common.Exceptions.csproj" />
+      <ProjectReference Include="..\Common.Http\Common.Http.csproj" />
+      <ProjectReference Include="..\Common.Serialization.Yaml\Common.Serialization.Yaml.csproj" />
+      <ProjectReference Include="..\Common.Text\Common.Text.csproj" />
+      <ProjectReference Include="..\Jackett.Contracts\Jackett.Contracts.csproj" />
+      <ProjectReference Include="..\MediaAccess.Workflow\MediaAccess.Workflow.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="config.yaml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
+</Project>

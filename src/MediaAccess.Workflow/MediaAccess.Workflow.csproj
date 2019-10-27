@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netcoreapp3.0</TargetFramework>
+        <RootNamespace>MediaServer.Workflow</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Telegram.Bot" Version="15.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Common.Collections\Common.Collections.csproj" />
+      <ProjectReference Include="..\Common.Cryptography\Common.Cryptography.csproj" />
+      <ProjectReference Include="..\Common.DateTime\Common.DateTime.csproj" />
+      <ProjectReference Include="..\Common.Http\Common.Http.csproj" />
+      <ProjectReference Include="..\Jackett.Contracts\Jackett.Contracts.csproj" />
+      <ProjectReference Include="..\MediaAccess.Contracts\MediaAccess.Contracts.csproj" />
+    </ItemGroup>
+
+</Project>

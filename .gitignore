@@ -1,0 +1,6 @@
+bin/
+obj/
+/packages/
+/.idea/
+
+config.yaml
