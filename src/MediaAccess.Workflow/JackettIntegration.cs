@@ -23,7 +23,7 @@ namespace MediaServer.Workflow
             var url = $"{this.config.Url}/api/v2.0/indexers/all/results";
 
             // Tracker%5B%5D
-            var httpBuilder = new HttpRequestBuilder().SetUrl(
+            var httpBuilder = new HttpRequestBuilder(this.config.Timeout).SetUrl(
                 url,
                 new NameValueCollection
                     {

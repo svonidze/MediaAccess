@@ -15,10 +15,12 @@ namespace MediaServer.Workflow
     using Common.Exceptions;
     using Common.Http;
     using Common.Serialization.Json;
+    using Common.Text;
 
     using Jackett.Contracts;
 
     using MediaServer.Contracts;
+    using MediaServer.Workflow.Constants;
 
     using Telegram.Bot;
     using Telegram.Bot.Args;
@@ -53,12 +55,16 @@ namespace MediaServer.Workflow
             this.configuration = configuration;
             
             var proxy = configuration.Proxy;
+            var webProxy = new WebProxy(proxy.Host, proxy.Port)
+                {
+                    Credentials = new NetworkCredential(proxy.UserName, proxy.Password)
+                };
             this.botClient = new TelegramBotClient(
                 configuration.TelegramBot.Token,
-                new WebProxy(proxy.Host, proxy.Port)
-                    {
-                        Credentials = new NetworkCredential(proxy.UserName, proxy.Password)
-                    });
+                webProxy)
+                {
+                    Timeout = this.configuration.TelegramBot.Timeout ?? TimeSpan.FromMinutes(1)
+                };
         }
 
         public void StartReceiving()
@@ -84,11 +90,11 @@ namespace MediaServer.Workflow
             var log = new Logger(this.botClient, e.CallbackQuery.Message);
 
             var queryData = e.CallbackQuery.Data;
-            if (queryData.StartsWith("Call"))
+            if (BotCommands.Blackhole.Regex.TryMath(queryData, out var match))
             {
                 const string ActionName = "Sending to Blackhole";
 
-                var hashedUri = queryData.Replace("Call ", null);
+                var hashedUri = match.Groups[BotCommands.Blackhole.Groups.HashUrl].Value;
                 if (!this.hashToUrl.TryGetValue(hashedUri, out var uri))
                 {
                     log.Log($"Uri not found by hash '{hashedUri}'");
@@ -97,8 +103,10 @@ namespace MediaServer.Workflow
                 }
 
                 var result = this.torrents.Results.Single(t => t.Guid == uri);
-                var response = new HttpRequestBuilder().SetUrl(result.BlackholeLink.AbsoluteUri)
+                var response = new HttpRequestBuilder()
+                    .SetUrl(result.BlackholeLink.AbsoluteUri)
                     .RequestAndValidate<ActionDoneResponse>(HttpMethod.Get);
+                
                 var success = response.result == "success";
                 
                 log.Text(
@@ -106,19 +114,10 @@ namespace MediaServer.Workflow
                     + $"for '{result.Title}'{(success ? null : response.ToJson())}");
                 log.LogLastMessage();
             }
-            else if (queryData.StartsWith("Go"))
+            else if (BotCommands.GoToPage.Regex.TryMath(queryData, out match))
             {
-                var regex = new Regex(@"Go (?<page>\d+) page");
-                var match = regex.Match(queryData);
-                if (!match.Success)
-                {
-                    log.Text($"Could not parse {queryData} as a pagination command");
-                    log.LogLastMessage();
-                    return;
-                }
-
-                var matchGroup = match.Groups["page"];
-                if (!matchGroup.Success || !int.TryParse(matchGroup.Value, out var page))
+                var pageString = match.Groups[BotCommands.GoToPage.Groups.Page].Value;
+                if (!int.TryParse(pageString, out var page))
                 {
                     log.Text($"Could not parse '{queryData}' as a pagination command. Page group could not recognized as {nameof(Int32)}");
                     log.LogLastMessage();
@@ -134,6 +133,8 @@ namespace MediaServer.Workflow
             }
         }
 
+        private bool waitingForUserInput;
+        
         private async void Bot_OnMessage(object sender, MessageEventArgs e)
         {
             var log = new Logger(this.botClient, e.Message);
@@ -152,51 +153,39 @@ namespace MediaServer.Workflow
                 return;
             }
 
-            if (messageText.StartsWith("Фильм "))
+            if (UserCommands.Kinopoisk.Regex.TryMath(messageText, out var match))
             {
-                Console.WriteLine("Detected Kinopois");
-
-                // Фильм "Во все тяжкие" ("Breaking Bad", 2008-2013) #kinopoisk
-                // http://www.kinopoisk.ru/film/404900/
-                var regex = new Regex(@"Фильм ""(?<rusName>.+)"" \(""(?<engName>.+)"", (?<years>\d+-?\d*)\)");
-
-                var match = regex.Match(messageText);
                 if (!match.Success)
                 {
-                    log.Text($"Cannot parse what you requested{Environment.NewLine}{messageText}");
+                    log.ReplyBack($"Cannot parse what you requested{NewLine}{messageText}");
                     return;
                 }
 
-                var searchRequest = match.Groups["rusName"] + " " + match.Groups["engName"];
+                var searchRequest =
+                    $"{match.Groups[UserCommands.Kinopoisk.Groups.RusName]} {match.Groups[UserCommands.Kinopoisk.Groups.EngName]}";
                 this.SearchTorrents(searchRequest, log);
             }
-            else if (messageText.StartsWith("/torrent"))
+            else if (UserCommands.Torrent.Regex.TryMath(messageText, out match))
             {
-                Console.WriteLine("Searching torrents");
-
-                var regex = new Regex(@"/torrent(?<botName>@\w+)? (?<searchRequest>.+)");
-                var match = regex.Match(messageText);
-
-                if (!match.Success)
-                {
-                    log.ReplyBack("Cant parse what you requested.");
-                    return;
-                }
-
-                var searchRequest = match.Groups["searchRequest"];
+                var searchRequest = match.Groups[UserCommands.Torrent.Groups.SearchRequest];
                 if (searchRequest.Value.IsNullOrEmpty())
                 {
-                    log.ReplyBack($"You requested search for nothing!");
+                    this.waitingForUserInput = true;
+                    log.Text($"Send your search request");
                     return;
                 }
 
                 this.SearchTorrents(searchRequest.Value, log);
             }
+            else if (this.waitingForUserInput)
+            {
+                this.waitingForUserInput = false;
+                this.SearchTorrents(messageText, log);
+            }
             else
             {
-                log.ReplyBack($"No idea what to do");
-                Console.WriteLine(
-                    $"Received a text message in chat {e.Message.Chat.Id}.{Environment.NewLine}{messageText}");
+                log.ReplyBack($"No idea what to do with your request");
+                log.Log($"Received a text message in chat {e.Message.Chat.Id}: {messageText}");
             }
         }
 
@@ -204,20 +193,23 @@ namespace MediaServer.Workflow
 
         private async void SearchTorrents(string searchRequest, Logger bot)
         {
-            bot.TextWithAction($"Searching for {searchRequest}", ChatAction.Typing);
+            var action = $"Searching torrents for {searchRequest}";
+            bot.TextWithAction(action, ChatAction.Typing);
+            bot.LogLastMessage();
+            
             var jackett = new JackettIntegration(this.configuration.Jackett);
-
             try
             {
                 this.torrents = jackett.SearchTorrents(searchRequest);
                 this.torrents.Results = this.torrents.Results.OrderByDescending(r => r.Size).ToArray();
                 
-                Console.WriteLine("Search is done");
+                bot.Log($"Done {action}");
             }
             catch (Exception exception)
             {
-                bot.Text(exception.GetShortDescription($"Search of '{searchRequest}'failed"));
-                Console.WriteLine(exception);
+                var message = $"Search of '{searchRequest}' failed";
+                bot.Text(exception.GetShortDescription(message));
+                bot.Log(exception.GetFullDescription(message));
             }
             
             this.ShowResults(1, bot);
@@ -231,13 +223,13 @@ namespace MediaServer.Workflow
                 bot.LogLastMessage();
                 return;
             }
-            
-            int lasPageNumber = (this.torrents.Results.Count / ChatSettings.PageResultNumber) + 1;
+
+            var lasPageNumber = (int)Math.Ceiling((double)this.torrents.Results.Count / ChatSettings.PageResultNumber);
             var resultsToShow = this.torrents.Results
                 .Skip(ChatSettings.PageResultNumber * (pageNumber - 1))
                 .Take(ChatSettings.PageResultNumber).ToArray();
 
-            InlineKeyboardButton PrepareButton(string text, int page, params int[] excludePages) =>
+            InlineKeyboardButton? PrepareButton(string text, int page, params int[] excludePages) =>
                 page != pageNumber && page > 0 && page <= lasPageNumber && (!excludePages.Any() || !excludePages.Contains(page))
                     ? InlineKeyboardButton.WithCallbackData(text, $"Go {page} page")
                     : null;
@@ -252,7 +244,7 @@ namespace MediaServer.Workflow
                                     var uri = r.Guid;
                                     var hashedUrl = EncryptHelper.GetMD5(uri.AbsoluteUri);
                                     this.hashToUrl.TryAdd(hashedUrl, uri);
-                                    return InlineKeyboardButton.WithCallbackData($"{this.GetResultIndex(r)}", $"Call {hashedUrl}");
+                                    return InlineKeyboardButton.WithCallbackData($"{this.GetResultIndex(r)}", $"Blackhole {hashedUrl}");
                                 }),
                         new[]
                             {
@@ -270,19 +262,21 @@ namespace MediaServer.Workflow
 
             var orderedIndexes = this.torrents.Indexers.OrderByDescending(i => i.Results).ToArray();
             bot.ReplyBack(
-                resultsToShow
-                    .Select(
-                        r => $"{this.GetResultIndex(r)}. {GetReadableSize(r.Size)} {r.Title}"
-                            + $"{NewLine}{r.Tracker} {nameof(r.Grabs)}:{r.Grabs} "
-                            + $"{nameof(r.Seeders)}:{r.Seeders} {r.PublishDate}").JoinToString(NewLine + NewLine)
-                + NewLine + NewLine
-                + $"Page {pageNumber}/{lasPageNumber}"
+                $"Page {pageNumber}/{lasPageNumber}"
                 + NewLine
                 + $"Found {this.torrents.Results.Count} results from "
                 + $"{orderedIndexes.Count(i => i.Results > 0)} indexers: "
-                + orderedIndexes.Select(i => $"{i.Name} ({i.Results})").JoinToString(", ") 
-                
-                ,
+                + orderedIndexes.Select(i => $"{i.Name} ({i.Results})").JoinToString(", ")
+                + NewLine + NewLine
+                + resultsToShow
+                    .Select(
+                        r => $"{this.GetResultIndex(r)}. {GetReadableSize(r.Size)} {r.Title}"
+                            + $"{NewLine}" 
+                            + $"{r.PublishDate:s}"
+                            + $"{NewLine}" 
+                            + $"{r.Tracker} {nameof(r.Files)}={r.Files} " 
+                            + $"{nameof(r.Grabs)}={r.Grabs} {nameof(r.Seeders)}={r.Seeders} ")
+                    .JoinToString(NewLine + NewLine),
                 replyMarkup: inlineKeyboardMarkup);
         }
 

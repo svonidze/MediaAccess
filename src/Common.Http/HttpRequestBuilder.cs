@@ -24,7 +24,7 @@ namespace Common.Http
 
         private HttpContent httpContent;
 
-        public HttpRequestBuilder()
+        public HttpRequestBuilder(TimeSpan? timeout = null)
         {
             //new LoggingHandler(
             // new HttpClientHandler
@@ -33,7 +33,7 @@ namespace Common.Http
             // })
             this.httpClient = new HttpClient
             {
-                Timeout = TimeSpan.FromMinutes(10),
+                Timeout = timeout ?? TimeSpan.FromMinutes(2)
             };
         }
 

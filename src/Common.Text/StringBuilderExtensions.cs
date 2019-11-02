@@ -43,9 +43,9 @@ namespace Common.Text
 
         public static StringBuilder AppendIfValueIsNotEmpty(this StringBuilder builder, string value)
         {
-            return value.IsNotEmpty()
-                       ? builder.Append(value)
-                       : builder;
+            return value.IsNullOrEmpty()
+                       ? builder
+                       : builder.Append(value);
         }
 
         public static StringBuilder AppendFormatNotEmptyParameters(
@@ -73,7 +73,7 @@ namespace Common.Text
                 case null:
                     return false;
                 case string s:
-                    return s.IsNotEmpty();
+                    return !s.IsNullOrEmpty();
                 default:
                     return true;
             }

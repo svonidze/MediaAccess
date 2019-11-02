@@ -7,11 +7,6 @@
             return string.IsNullOrEmpty(input);
         }
 
-        public static bool IsNotEmpty(this string input)
-        {
-            return string.IsNullOrEmpty(input) == false;
-        }
-
         public static string TrimEnd(this string input, string suffixToRemove)
         {
             if (input != null && suffixToRemove != null && input.EndsWith(suffixToRemove))
