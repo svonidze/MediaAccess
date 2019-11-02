@@ -5,4 +5,8 @@
         <RootNamespace>MediaServer.Contracts</RootNamespace>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\Jackett.Contracts\Jackett.Contracts.csproj" />
+    </ItemGroup>
+
 </Project>

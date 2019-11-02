@@ -11,23 +11,23 @@ namespace MediaServer.Workflow
 
     public class JackettIntegration
     {
-        private readonly Settings settings;
+        private readonly IJackettAccessConfiguration config;
 
-        public JackettIntegration(Settings settings)
+        public JackettIntegration(IJackettAccessConfiguration config)
         {
-            this.settings = settings;
+            this.config = config;
         }
 
         public ManualSearchResult SearchTorrents(string searchRequest)
         {
-            var url = $"{this.settings.Url}/api/v2.0/indexers/all/results";
+            var url = $"{this.config.Url}/api/v2.0/indexers/all/results";
 
             // Tracker%5B%5D
             var httpBuilder = new HttpRequestBuilder().SetUrl(
                 url,
                 new NameValueCollection
                     {
-                        { "apikey", settings.ApiKey },
+                        { "apikey", this.config.ApiKey },
                         { "Query", searchRequest },
                         { "_", DateTime.UtcNow.ToUnixTimestamp().ToString() }
                     });

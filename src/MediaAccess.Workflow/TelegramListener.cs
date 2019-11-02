@@ -32,7 +32,7 @@ namespace MediaServer.Workflow
         private readonly ITelegramBotClient botClient;
 
         private readonly Configuration configuration;
-
+        
         private ManualSearchResult results;
 
         private readonly ConcurrentDictionary<string, Uri> hashToUrl = new ConcurrentDictionary<string, Uri>();
@@ -43,7 +43,7 @@ namespace MediaServer.Workflow
             
             var proxy = configuration.Proxy;
             this.botClient = new TelegramBotClient(
-                configuration.TelegramBotToken,
+                configuration.TelegramBot.Token,
                 new WebProxy(proxy.Host, proxy.Port)
                     {
                         Credentials = new NetworkCredential(proxy.UserName, proxy.Password)
@@ -55,7 +55,7 @@ namespace MediaServer.Workflow
             var me = this.botClient.GetMeAsync();
                 
             this.botClient.OnMessage += this.Bot_OnMessage;
-            this.botClient.OnCallbackQuery += this.BotClientOnOnCallbackQuery;
+            this.botClient.OnCallbackQuery += this.Bot_OnCallbackQuery;
             this.botClient.StartReceiving();
 
             Console.WriteLine($"{nameof(this.StartReceiving)} is run for bot {me.Result.ToJson()}");
@@ -64,11 +64,11 @@ namespace MediaServer.Workflow
         public void StopReceiving()
         {
             this.botClient.OnMessage -= this.Bot_OnMessage;
-            this.botClient.OnCallbackQuery -= this.BotClientOnOnCallbackQuery;
+            this.botClient.OnCallbackQuery -= this.Bot_OnCallbackQuery;
             this.botClient.StopReceiving();
         }
 
-        private void BotClientOnOnCallbackQuery(object sender, CallbackQueryEventArgs e)
+        private void Bot_OnCallbackQuery(object sender, CallbackQueryEventArgs e)
         {
             var r = new Responser(botClient, e.CallbackQuery.Message);
 
@@ -100,8 +100,15 @@ namespace MediaServer.Workflow
 
         private async void Bot_OnMessage(object sender, MessageEventArgs e)
         {
-            var r = new Responser(botClient, e.Message);
+            var r = new Responser(this.botClient, e.Message);
 
+            var allowedChats = this.configuration.TelegramBot.AllowedChats;
+            if (allowedChats != null && !allowedChats.Contains(e.Message.Chat.Id))
+            {
+                r.ReplyBack("You are not allowed to use this Bot instance. Run your own!");
+                Console.WriteLine($"{e.Message.Chat.Username} in chat {e.Message.Chat.Id} tried to access the Bot. Chat is not allowed.");
+                return;
+            }
             var messageText = e.Message.Text;
             if (messageText == null)
             {
@@ -115,18 +122,18 @@ namespace MediaServer.Workflow
 
                 // Фильм "Во все тяжкие" ("Breaking Bad", 2008-2013) #kinopoisk
                 // http://www.kinopoisk.ru/film/404900/
-                Regex regex = new Regex(@"Фильм ""(?<rusName>.+)"" \(""(?<engName>.+)"", (?<years>\d+-?\d*)\)");
+                var regex = new Regex(@"Фильм ""(?<rusName>.+)"" \(""(?<engName>.+)"", (?<years>\d+-?\d*)\)");
 
                 var match = regex.Match(messageText);
                 if (!match.Success)
                 {
-                    r.Text($"Cant parse what you requested{Environment.NewLine}{messageText}");
+                    r.Text($"Cannot parse what you requested{Environment.NewLine}{messageText}");
                     return;
                 }
 
                 var searchRequest = match.Groups["rusName"] + " " + match.Groups["engName"];
 
-                SearchTorrents(searchRequest, r);
+                this.SearchTorrents(searchRequest, r);
             }
             else if (messageText.StartsWith("torrent"))
             {
@@ -148,7 +155,7 @@ namespace MediaServer.Workflow
                     return;
                 }
 
-                SearchTorrents(searchRequest.Value, r);
+                this.SearchTorrents(searchRequest.Value, r);
             }
             else
             {
@@ -161,16 +168,11 @@ namespace MediaServer.Workflow
         private async void SearchTorrents(string searchRequest, Responser r)
         {
             r.TextWithAction($"Searching for {searchRequest}", ChatAction.Typing);
-            var jackett = new JackettIntegration(
-                new Jackett.Contracts.Settings
-                    {
-                        Url = this.configuration.JacketUrl,
-                        ApiKey = this.configuration.JacketApiKey
-                    });
+            var jackett = new JackettIntegration(this.configuration.Jackett);
 
             try
             {
-                results = jackett.SearchTorrents(searchRequest);
+                this.results = jackett.SearchTorrents(searchRequest);
             }
             catch (Exception exception)
             {
