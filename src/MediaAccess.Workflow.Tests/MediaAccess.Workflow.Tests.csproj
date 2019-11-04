@@ -13,8 +13,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\src\Common.Text\Common.Text.csproj" />
-      <ProjectReference Include="..\src\MediaAccess.Workflow\MediaAccess.Workflow.csproj" />
+      <ProjectReference Include="..\Common.Text\Common.Text.csproj" />
+      <ProjectReference Include="..\MediaAccess.Workflow\MediaAccess.Workflow.csproj" />
     </ItemGroup>
 
 </Project>

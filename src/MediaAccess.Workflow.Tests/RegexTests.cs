@@ -1,12 +1,10 @@
 namespace MediaAccess.Workflow.Tests
 {
-    using System;
     using System.Linq;
 
     using Common.Collections;
     using Common.Text;
 
-    using MediaServer.Workflow;
     using MediaServer.Workflow.Constants;
 
     using NUnit.Framework;
@@ -57,15 +55,6 @@ namespace MediaAccess.Workflow.Tests
                     GetValue(UserCommands.Kinopoisk.Groups.EngName),
                     GetValue(UserCommands.Kinopoisk.Groups.Years)
                 }.Where(v=>!v.IsNullOrEmpty()).JoinToString(' ');
-        }
-
-        [Test]
-        public void METHOD()
-        {
-            Console.WriteLine($"{4 / 3}");
-            Console.WriteLine($"{(decimal)4 / 3}");
-            Console.WriteLine($"{(double)4 / 3}");
-            Console.WriteLine($"{Math.Ceiling((double)4 / 3)}");
         }
     }
 }

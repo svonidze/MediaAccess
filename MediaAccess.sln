@@ -30,7 +30,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MediaAccess.Contracts", "sr
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{5A0ECF7E-F3DD-4C90-A8DB-0F536E76612A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MediaAccess.Workflow.Tests", "MediaAccess.Workflow.Tests\MediaAccess.Workflow.Tests.csproj", "{14D0FB17-9638-4ABE-9F24-40B36E0C501A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MediaAccess.Workflow.Tests", "src\MediaAccess.Workflow.Tests\MediaAccess.Workflow.Tests.csproj", "{14D0FB17-9638-4ABE-9F24-40B36E0C501A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
