@@ -14,5 +14,7 @@ namespace MediaServer.Contracts
 
         [CanBeNull]
         public BitTorrentClientConfiguration BitTorrent { get; set; }
+        
+        public ViewFilterConfiguration ViewFilter { get; set; }
     }
 }

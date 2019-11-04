@@ -1,8 +1,8 @@
 namespace MediaServer.Contracts
 {
-    public class ChatSettings
+    public class ViewFilterConfiguration
     {
-        public int PageResultNumber { get; set; }
+        public int ResultNumberOnPage { get; set; }
 
         public string OrderBy { get; set; }
 

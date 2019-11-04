@@ -6,7 +6,8 @@ namespace MediaServer.Contracts
     {
         public BitTorrentType BitTorrentType { get; set; }
 
-        [NotNull]
+        public bool ForceUsingBlackHole { get; set; }
+        
         public string Host { get; set; }
         
         [NotNull]
