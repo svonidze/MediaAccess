@@ -9,4 +9,8 @@
       <ProjectReference Include="..\Jackett.Contracts\Jackett.Contracts.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="JetBrains.Annotations" Version="2019.1.3" />
+    </ItemGroup>
+
 </Project>

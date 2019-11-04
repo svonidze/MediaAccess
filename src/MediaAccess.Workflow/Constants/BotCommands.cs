@@ -15,9 +15,9 @@ namespace MediaServer.Workflow.Constants
             }
         }
         
-        public static class Blackhole
+        public static class PickLocationForTorrent
         {
-            public const string Format = "Blackhole {0}";
+            public const string Format = nameof(PickLocationForTorrent) + " {0}";
             public static readonly Regex Regex = new Regex(string.Format(Format, @"(?<hashUrl>\w{32})"));
 
             public static class Groups
@@ -26,6 +26,15 @@ namespace MediaServer.Workflow.Constants
             }
         }
         
-        
+        public static class StartTorrent
+        {
+            public const string Format = nameof(StartTorrent) + " {0}";
+            public static readonly Regex Regex = new Regex(string.Format(Format, @"(?<location>.*)"));
+
+            public static class Groups
+            {
+                public const string HashUrl = "location";
+            }
+        }
     }
 }

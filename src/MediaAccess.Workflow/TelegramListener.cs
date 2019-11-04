@@ -5,7 +5,6 @@ namespace MediaServer.Workflow
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Text.RegularExpressions;
     using System.Threading;
 
     using ByteSizeLib;
@@ -28,7 +27,10 @@ namespace MediaServer.Workflow
     using Telegram.Bot.Types.Enums;
     using Telegram.Bot.Types.ReplyMarkups;
 
+    using Transmission.API.RPC.Entity;
+
     // TODO use log library
+    // TODO handling /start command
     public class TelegramListener
     {
         private static readonly string NewLine = Environment.NewLine;
@@ -37,8 +39,6 @@ namespace MediaServer.Workflow
 
         private readonly Configuration configuration;
         
-        private ManualSearchResult torrents;
-
         private readonly ConcurrentDictionary<string, Uri> hashToUrl = new ConcurrentDictionary<string, Uri>();
 
         private static readonly ChatSettings ChatSettings = new ChatSettings
@@ -49,6 +49,10 @@ namespace MediaServer.Workflow
                 MaxSize = null,
                 MinSize = "1 GB"
             };
+        
+        private ManualSearchResult torrents;
+        private TrackerCacheResult torrent;
+        private bool waitingForUserInput;
         
         public TelegramListener(Configuration configuration)
         {
@@ -84,35 +88,102 @@ namespace MediaServer.Workflow
             this.botClient.OnCallbackQuery -= this.Bot_OnCallbackQuery;
             this.botClient.StopReceiving();
         }
-
+        
         private void Bot_OnCallbackQuery(object sender, CallbackQueryEventArgs e)
         {
             var log = new Logger(this.botClient, e.CallbackQuery.Message);
 
             var queryData = e.CallbackQuery.Data;
-            if (BotCommands.Blackhole.Regex.TryMath(queryData, out var match))
+            if (BotCommands.PickLocationForTorrent.Regex.TryMath(queryData, out var match))
             {
-                const string ActionName = "Sending to Blackhole";
-
-                var hashedUri = match.Groups[BotCommands.Blackhole.Groups.HashUrl].Value;
+                var hashedUri = match.Groups[BotCommands.PickLocationForTorrent.Groups.HashUrl].Value;
                 if (!this.hashToUrl.TryGetValue(hashedUri, out var uri))
                 {
-                    log.Log($"Uri not found by hash '{hashedUri}'");
                     log.Text($"Search results are expired, repeat your search");
+                    log.Log($"Uri not found by hash '{hashedUri}'");
                     return;
                 }
 
-                var result = this.torrents.Results.Single(t => t.Guid == uri);
-                var response = new HttpRequestBuilder()
-                    .SetUrl(result.BlackholeLink.AbsoluteUri)
-                    .RequestAndValidate<ActionDoneResponse>(HttpMethod.Get);
+                var torrentCandidates = this.torrents.Results.Where(t => t.Guid == uri).ToArray();
+                if (!torrentCandidates.Any())
+                {
+                    log.Text("Found no torrents, probably Search results are expired, repeat your search");
+                    log.Log($"Torrent could not be found with URL={uri.AbsoluteUri}, last search has {this.torrents?.Results?.Count} results");
+                    return;
+                }
+
+                if (torrentCandidates.Length > 1)
+                {
+                    log.Text("Strange, found more than one torrent with the same characteristics, probably search results are corrupted, repeat your search");
+                    log.Log($"Found {torrentCandidates.Length} torrents with URL={uri.AbsoluteUri}, last search has {this.torrents?.Results?.Count} results");
+                    return;
+                }
+
+                this.torrent = torrentCandidates.Single();
+
+                if (this.configuration.BitTorrent?.DownloadLocations?.Any() != true)
+                {
+                    this.SendToBlackHoleLocation(log);
+                    return;
+                }
+
+                log.ReplyBack(
+                    $"Pick download location for torrent #{this.GetResultIndex(this.torrent)}",
+                    new InlineKeyboardMarkup(
+                        this.configuration.BitTorrent.DownloadLocations.Select(
+                            dl => InlineKeyboardButton.WithCallbackData(
+                                dl,
+                                string.Format(BotCommands.StartTorrent.Format, dl)))));
+            }
+            else if (BotCommands.StartTorrent.Regex.TryMath(queryData, out match))
+            {
+                if (this.torrent == null)
+                {
+                    log.Text("No torrent is picked");
+                    log.LogLastMessage();
+                    return;
+                }
+                var location = match.Groups[BotCommands.StartTorrent.Groups.HashUrl].Value;
+
+                if (this.configuration.BitTorrent == null)
+                {
+                    this.SendToBlackHoleLocation(log);
+                    return;
+                }
+
+                var transmissionClient = new Transmission.API.RPC.Client(this.configuration.BitTorrent.Host);
+                var newTorrent = transmissionClient.TorrentAddAsync(
+                    new NewTorrent
+                        {
+                            Filename = this.torrent.Link.AbsoluteUri,
+                            DownloadDirectory = location
+                        });
+
+                newTorrent.Wait();
+                if (newTorrent.Exception != null)
+                {
+                    var message = $"Torrent '{this.torrent.Title}' could not be added";
+                    log.ReplyBack(newTorrent.Exception.GetShortDescription(message));
+                    log.Log(newTorrent.Exception.GetFullDescription(message));
+                    return;
+                }
+                else if (newTorrent.Result == null)
+                {
+                    var message = $"Adding of torrent '{this.torrent.Title}' returned null with no explanation";
+                    log.ReplyBack(message);
+                    log.LogLastMessage();
+                    return;
+                }
+                else if(!newTorrent.IsCompletedSuccessfully)
+                {
+                    var message = $"Torrent '{this.torrent.Title}' could not be added due unknown reasons";
+                    log.ReplyBack(message);
+                    log.LogLastMessage();
+                    return;
+                }
                 
-                var success = response.result == "success";
-                
-                log.Text(
-                    $"{ActionName} {(success ? "done" : "not done")} " 
-                    + $"for '{result.Title}'{(success ? null : response.ToJson())}");
-                log.LogLastMessage();
+                log.ReplyBack($"Torrent '{newTorrent.Result.Name}' was added");
+                log.Log($"Torrent '{newTorrent.Result.Name}' was added {newTorrent.Result.ToJson()}");
             }
             else if (BotCommands.GoToPage.Regex.TryMath(queryData, out match))
             {
@@ -132,8 +203,6 @@ namespace MediaServer.Workflow
                 log.Text($"Your action '{queryData}' is not supported. Maybe you click old buttons?");
             }
         }
-
-        private bool waitingForUserInput;
         
         private async void Bot_OnMessage(object sender, MessageEventArgs e)
         {
@@ -189,7 +258,7 @@ namespace MediaServer.Workflow
             }
         }
 
-        int GetResultIndex(TrackerCacheResult r) =>  this.torrents.Results.IndexOf(r) + 1;
+        private int GetResultIndex(TrackerCacheResult t) =>  this.torrents.Results.IndexOf(t) + 1;
 
         private async void SearchTorrents(string searchRequest, Logger bot)
         {
@@ -215,6 +284,21 @@ namespace MediaServer.Workflow
             this.ShowResults(1, bot);
         }
 
+        private void SendToBlackHoleLocation(Logger log)
+        {
+            var response = new HttpRequestBuilder()
+                .SetUrl(this.torrent.BlackholeLink.AbsoluteUri)
+                .RequestAndValidate<ActionDoneResponse>(HttpMethod.Get);
+                
+            var success = response.result == "success";
+                
+            log.Text(
+                $"Sending to Blackhole was{(success ? null : " NOT")} DONE" 
+                + $"for '{this.torrent.Title}'{(success ? null : response.ToJson())}");
+            log.LogLastMessage();
+            this.torrent = null;
+        }
+        
         private void ShowResults(int pageNumber, Logger bot)
         {
             if (this.torrents == null)
@@ -244,7 +328,9 @@ namespace MediaServer.Workflow
                                     var uri = r.Guid;
                                     var hashedUrl = EncryptHelper.GetMD5(uri.AbsoluteUri);
                                     this.hashToUrl.TryAdd(hashedUrl, uri);
-                                    return InlineKeyboardButton.WithCallbackData($"{this.GetResultIndex(r)}", $"Blackhole {hashedUrl}");
+                                    return InlineKeyboardButton.WithCallbackData(
+                                        this.GetResultIndex(r).ToString(), 
+                                        string.Format(BotCommands.PickLocationForTorrent.Format, hashedUrl));
                                 }),
                         new[]
                             {

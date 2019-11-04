@@ -8,6 +8,7 @@
     <ItemGroup>
       <PackageReference Include="ByteSize" Version="1.3.0" />
       <PackageReference Include="Telegram.Bot" Version="15.0.0" />
+      <PackageReference Include="Transmission.API.RPC" Version="2.0.0" />
     </ItemGroup>
 
     <ItemGroup>

@@ -13,7 +13,6 @@
     class Program
     {
         // TODO utilize library to parse CLI args 
-        // TODO restrict users which can have access to Telegram
         static void Main(string[] args)
         {
             AppDomain.CurrentDomain.UnhandledException += UnhandledExceptionTrapper;
