@@ -43,6 +43,11 @@
         {
             return new HashSet<T>(enumerable);
         }
+        
+        public static ConcurrentHashSet<T> ToConcurrentHashSet<T>(this IEnumerable<T> enumerable)
+        {
+            return new ConcurrentHashSet<T>(enumerable);
+        }
 
         public static Queue<T> ToQueue<T>(this IEnumerable<T> enumerable)
         {

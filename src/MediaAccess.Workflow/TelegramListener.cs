@@ -4,18 +4,22 @@ namespace MediaServer.Workflow
     using System.Collections.Concurrent;
     using System.Net;
 
+    using Common.Collections;
     using Common.Serialization.Json;
 
     using MediaServer.Contracts;
 
     using Telegram.Bot;
     using Telegram.Bot.Args;
+    using Telegram.Bot.Types;
 
     public class TelegramListener
     {
         private readonly ITelegramBotClient botClient;
 
         private readonly Configuration configuration;
+
+        private readonly ConcurrentHashSet<long> allowedChats;
 
         // TODO make cache expiration
         private readonly ConcurrentDictionary<long, TelegramChatListener> chatByListener =
@@ -24,7 +28,8 @@ namespace MediaServer.Workflow
         public TelegramListener(Configuration configuration)
         {
             this.configuration = configuration;
-
+            this.allowedChats = this.configuration.TelegramBot.AllowedChats.ToConcurrentHashSet();
+            
             var proxy = configuration.Proxy;
             var webProxy = new WebProxy(proxy.Host, proxy.Port)
                 {
@@ -59,16 +64,33 @@ namespace MediaServer.Workflow
 
         private async void OnCallbackQuery(object sender, CallbackQueryEventArgs e)
         {
-            var message = e.CallbackQuery.Message;
-            var chatListener = this.GetOrAddChatListener(message.Chat.Id);
-            chatListener.Handle(e.CallbackQuery.Data, message);
+            this.Handle(e.CallbackQuery.Message, (chatListener, log) => chatListener.Handle(e.CallbackQuery.Data, log));
         }
 
         private async void OnMessage(object sender, MessageEventArgs e)
         {
-            var message = e.Message;
+            this.Handle(e.Message, (chatListener, log) => chatListener.Handle(e.Message, log));
+        }
+
+        private void Handle(Message message, Action<TelegramChatListener, ClientAndServerLogger> action)
+        {
+            var log = new ClientAndServerLogger(this.botClient, message);
+            if (!this.CheckChatIsAllowed(message, log))
+                return;
+            
             var chatListener = this.GetOrAddChatListener(message.Chat.Id);
-            chatListener.Handle(message);
+            action(chatListener, log);
+        }
+
+        private bool CheckChatIsAllowed(Message message, ClientAndServerLogger log)
+        {
+            if (this.allowedChats.IsNullOrEmpty() || this.allowedChats.Contains(message.Chat.Id))
+                return true;
+            
+            log.ReplyBack("You are not allowed to use this Bot instance. Run your own!");
+            log.Log($"{message.Chat.Username} in chat {message.Chat.Id} tried to access the Bot. Chat is not allowed.");
+            return false;
+
         }
     }
 }

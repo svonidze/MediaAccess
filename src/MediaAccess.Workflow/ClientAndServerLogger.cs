@@ -8,7 +8,7 @@ namespace MediaServer.Workflow
     using Telegram.Bot.Types.Enums;
     using Telegram.Bot.Types.ReplyMarkups;
 
-    internal class ClientAndServerLogger
+    public class ClientAndServerLogger
     {
         private readonly ITelegramBotClient botClient;
 

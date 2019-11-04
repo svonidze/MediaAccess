@@ -52,12 +52,9 @@ namespace MediaServer.Workflow
             this.configuration = configuration;
         }
 
-        public void Handle(string queryData, Message message)
+        public void Handle(string queryData, ClientAndServerLogger log)
         {
             var bitTorrentConfig = this.configuration.BitTorrent;
-
-            var log = new ClientAndServerLogger(this.botClient, message);
-
             if (BotCommands.PickLocationForTorrent.Regex.TryMath(queryData, out var match))
             {
                 var hashedUri = match.Groups[BotCommands.PickLocationForTorrent.Groups.HashUrl].Value;
@@ -157,7 +154,7 @@ namespace MediaServer.Workflow
             else if (BotCommands.GoToPage.Regex.TryMath(queryData, out match))
             {
                 var pageString = match.Groups[BotCommands.GoToPage.Groups.Page].Value;
-                if (!Int32.TryParse(pageString, out var page))
+                if (!int.TryParse(pageString, out var page))
                 {
                     log.Text(
                         $"Could not parse '{queryData}' as a pagination command. Page group could not recognized as {nameof(Int32)}");
@@ -174,19 +171,8 @@ namespace MediaServer.Workflow
             }
         }
 
-        public async void Handle(Message message)
+        public async void Handle(Message message, ClientAndServerLogger log)
         {
-            var log = new ClientAndServerLogger(this.botClient, message);
-
-            var allowedChats = this.configuration.TelegramBot.AllowedChats;
-            if (!allowedChats.IsNullOrEmpty() && !allowedChats.Contains(message.Chat.Id))
-            {
-                log.ReplyBack("You are not allowed to use this Bot instance. Run your own!");
-                log.Log(
-                    $"{message.Chat.Username} in chat {message.Chat.Id} tried to access the Bot. Chat is not allowed.");
-                return;
-            }
-
             var messageText = message.Text;
             if (messageText == null)
             {
@@ -223,6 +209,7 @@ namespace MediaServer.Workflow
                 log.Log($"Received a text message in chat {message.Chat.Id}: {messageText}");
             }
         }
+        
 
         private int GetResultIndex(TrackerCacheResult t) => this.torrents.Results.IndexOf(t) + 1;
 
