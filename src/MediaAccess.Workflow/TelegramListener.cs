@@ -13,6 +13,7 @@ namespace MediaServer.Workflow
     using Telegram.Bot.Args;
     using Telegram.Bot.Types;
 
+    // TODO use log library
     public class TelegramListener
     {
         private readonly ITelegramBotClient botClient;
@@ -60,14 +61,14 @@ namespace MediaServer.Workflow
         }
 
         private TelegramChatListener GetOrAddChatListener(long chatId) =>
-            this.chatByListener.GetOrAdd(chatId, ci => new TelegramChatListener(this.botClient, this.configuration));
+            this.chatByListener.GetOrAdd(chatId, ci => new TelegramChatListener(this.configuration));
 
-        private async void OnCallbackQuery(object sender, CallbackQueryEventArgs e)
+        private void OnCallbackQuery(object sender, CallbackQueryEventArgs e)
         {
             this.Handle(e.CallbackQuery.Message, (chatListener, log) => chatListener.Handle(e.CallbackQuery.Data, log));
         }
 
-        private async void OnMessage(object sender, MessageEventArgs e)
+        private void OnMessage(object sender, MessageEventArgs e)
         {
             this.Handle(e.Message, (chatListener, log) => chatListener.Handle(e.Message, log));
         }
@@ -90,7 +91,6 @@ namespace MediaServer.Workflow
             log.ReplyBack("You are not allowed to use this Bot instance. Run your own!");
             log.Log($"{message.Chat.Username} in chat {message.Chat.Id} tried to access the Bot. Chat is not allowed.");
             return false;
-
         }
     }
 }

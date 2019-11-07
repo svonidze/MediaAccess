@@ -33,7 +33,20 @@ namespace MediaServer.Workflow.Constants
             public static readonly Regex Regex = new Regex(
                 @"Фильм ""(?<rusName>.+)""\s?\((""(?<engName>.+)"")?,?\s?(?<years>\d+-?\d*)\)");
         }
-        
-        
+
+        public static class Film
+        {
+            public static class Groups
+            {
+                public const string Name = "name";
+            }
+            
+            public static readonly Regex Regex = new Regex(@"Фильм (?<name>.+)");
+        }
+
+        public static class StartBotCommunication
+        {
+            public static readonly Regex Regex = new Regex(@"/start");
+        }
     }
 }

@@ -8,7 +8,7 @@ namespace MediaServer.Contracts
 
         public bool ForceUsingBlackHole { get; set; }
         
-        public string Host { get; set; }
+        public string Url { get; set; }
         
         [NotNull]
         public string[] DownloadLocations { get; set; }

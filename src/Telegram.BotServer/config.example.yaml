@@ -1,0 +1,29 @@
+Proxy:
+  Host: proxy.website.comg
+  Port: 8080
+  UserName: username
+  Password: password
+TelegramBot:
+  Timeout: 00:03:00
+  Token: 1111111111:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+  AllowedChats:
+    - 222222222
+    - -333333333 
+Jackett:
+  Timeout: 00:03:00
+  Url: http://jackett.website.com:9117
+  ApiKey: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+BitTorrent:
+  ForceUsingBlackHole: false
+  BitTorrentType: Transmission
+  Url: http://website.com:9091/transmission/rpc
+  DownloadLocations:
+    - /shows
+    - /movies
+    - /downloads
+ViewFilter:
+  ResultNumberOnPage: 5
+  OrderBy: "Size"
+  SortingDirection: "DESC"
+  MaxSize: null
+  MinSize: "1 GB"

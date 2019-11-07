@@ -19,7 +19,6 @@ namespace MediaServer.Workflow
     using MediaServer.Contracts;
     using MediaServer.Workflow.Constants;
 
-    using Telegram.Bot;
     using Telegram.Bot.Types;
     using Telegram.Bot.Types.Enums;
     using Telegram.Bot.Types.ReplyMarkups;
@@ -29,12 +28,7 @@ namespace MediaServer.Workflow
 
     public class TelegramChatListener
     {
-        // TODO use log library
-        // TODO handling /start command
-            
         private static readonly string NewLine = Environment.NewLine;
-
-        private readonly ITelegramBotClient botClient;
 
         private readonly Configuration configuration;
 
@@ -46,9 +40,8 @@ namespace MediaServer.Workflow
 
         private bool waitingForUserInput;
 
-        public TelegramChatListener(ITelegramBotClient botClient, Configuration configuration)
+        public TelegramChatListener(Configuration configuration)
         {
-            this.botClient = botClient;
             this.configuration = configuration;
         }
 
@@ -100,7 +93,7 @@ namespace MediaServer.Workflow
                         bitTorrentConfig.DownloadLocations.Select(
                             dl => InlineKeyboardButton.WithCallbackData(
                                 dl,
-                                String.Format(BotCommands.StartTorrent.Format, dl)))));
+                                string.Format(BotCommands.StartTorrent.Format, dl)))));
             }
             else if (BotCommands.StartTorrent.Regex.TryMath(queryData, out match))
             {
@@ -119,7 +112,7 @@ namespace MediaServer.Workflow
                     return;
                 }
 
-                var transmissionClient = new Client(bitTorrentConfig.Host);
+                var transmissionClient = new Client(bitTorrentConfig.Url);
                 var newTorrent = transmissionClient.TorrentAddAsync(
                     new NewTorrent
                         {
@@ -171,7 +164,7 @@ namespace MediaServer.Workflow
             }
         }
 
-        public async void Handle(Message message, ClientAndServerLogger log)
+        public void Handle(Message message, ClientAndServerLogger log)
         {
             var messageText = message.Text;
             if (messageText == null)
@@ -180,10 +173,20 @@ namespace MediaServer.Workflow
                 return;
             }
 
-            if (UserCommands.Kinopoisk.Regex.TryMath(messageText, out var match))
+            if (UserCommands.StartBotCommunication.Regex.TryMath(messageText, out var match))
+            {
+                log.Text("Greeting! Here you can search for torrents and send them to a favorite BitTorrent client. Lets start with typing /t or /torrent.");
+                log.Log(messageText);
+            }
+            else if (UserCommands.Kinopoisk.Regex.TryMath(messageText, out match))
             {
                 var searchRequest =
                     $"{match.Groups[UserCommands.Kinopoisk.Groups.RusName]} {match.Groups[UserCommands.Kinopoisk.Groups.EngName]}";
+                this.SearchTorrents(searchRequest, log);
+            }
+            else if (UserCommands.Film.Regex.TryMath(messageText, out match))
+            {
+                var searchRequest = match.Groups[UserCommands.Film.Groups.Name].Value;
                 this.SearchTorrents(searchRequest, log);
             }
             else if (UserCommands.Torrent.Regex.TryMath(messageText, out match))
@@ -213,28 +216,36 @@ namespace MediaServer.Workflow
 
         private int GetResultIndex(TrackerCacheResult t) => this.torrents.Results.IndexOf(t) + 1;
 
-        private async void SearchTorrents(string searchRequest, ClientAndServerLogger bot)
+        private void SearchTorrents(string searchRequest, ClientAndServerLogger log)
         {
+            if (searchRequest.IsNullOrEmpty())
+            {
+                log.ReplyBack("Search request is recognized as empty");
+                log.LogLastMessage();
+                return;
+            }
+            
             var action = $"Searching torrents for {searchRequest}";
-            bot.TextWithAction(action, ChatAction.Typing);
-            bot.LogLastMessage();
+            log.TextWithAction(action, ChatAction.Typing);
+            log.LogLastMessage();
 
             var jackett = new JackettIntegration(this.configuration.Jackett);
             try
             {
+                this.torrents = null;
                 this.torrents = jackett.SearchTorrents(searchRequest);
                 this.torrents.Results = this.torrents.Results.OrderByDescending(r => r.Size).ToArray();
 
-                bot.Log($"Done {action}");
+                log.Log($"Done {action}");
             }
             catch (Exception exception)
             {
                 var message = $"Search of '{searchRequest}' failed";
-                bot.Text(exception.GetShortDescription(message));
-                bot.Log(exception.GetFullDescription(message));
+                log.Text(exception.GetShortDescription(message));
+                log.Log(exception.GetFullDescription(message));
             }
 
-            this.ShowResults(1, bot);
+            this.ShowResults(1, log);
         }
 
         private void SendToBlackHoleLocation(ClientAndServerLogger log)
@@ -252,21 +263,21 @@ namespace MediaServer.Workflow
             this.torrent = null;
         }
 
-        private void ShowResults(int pageNumber, ClientAndServerLogger bot)
+        private void ShowResults(int pageNumber, ClientAndServerLogger log)
         {
             if (this.torrents == null)
             {
-                bot.ReplyBack("Search results are expired, try your search again.");
-                bot.LogLastMessage();
+                log.ReplyBack("Search results are expired, try your search again.");
+                log.LogLastMessage();
                 return;
             }
             if (!this.torrents.Results.Any())
             {
-                bot.ReplyBack(
+                log.ReplyBack(
                     $"No search results from {this.torrents.Indexers.Count} indexers " 
                     + this.torrents.Indexers.OrderBy(i => i.Name).Select(i => i.Name).JoinToString(", ") 
                     + ". Try to reword your search.");
-                bot.LogLastMessage();
+                log.LogLastMessage();
                 return;
             }
                 
@@ -313,7 +324,7 @@ namespace MediaServer.Workflow
                     : null;
 
             var orderedIndexes = this.torrents.Indexers.OrderByDescending(i => i.Results).ToArray();
-            bot.ReplyBack(
+            log.ReplyBack(
                 $"Page {pageNumber}/{lasPageNumber}" 
                 + NewLine
                 + $"Found {this.torrents.Results.Count} results from "

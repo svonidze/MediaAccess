@@ -36,8 +36,6 @@ namespace MediaAccess.Workflow.Tests
             return match.Groups[UserCommands.Torrent.Groups.SearchRequest].Value;
         }
 
-        // 
-        // http://www.kinopoisk.ru/film/404900/
         [TestCase(@"Фильм ""Во все тяжкие"" (""Breaking Bad"", 2008-2013)", ExpectedResult = "Во все тяжкие Breaking Bad 2008-2013")]
         [TestCase(@"Фильм ""Зеленый слоник"" (1999)", ExpectedResult = "Зеленый слоник 1999")]
         public string Kinoposik(string text)
@@ -55,6 +53,20 @@ namespace MediaAccess.Workflow.Tests
                     GetValue(UserCommands.Kinopoisk.Groups.EngName),
                     GetValue(UserCommands.Kinopoisk.Groups.Years)
                 }.Where(v=>!v.IsNullOrEmpty()).JoinToString(' ');
+        }
+        
+        [TestCase(@"Фильм Зеленый слоник", ExpectedResult = "Зеленый слоник")]
+        [TestCase(@"Фильм Rick and Morty", ExpectedResult = "Rick and Morty")]
+        public string Film(string text)
+        {
+            if (!UserCommands.Film.Regex.TryMath(text, out var match))
+            {
+                Assert.Fail($"Cant parse what you requested {text}");
+            }
+
+            string GetValue(string groupName) => match.Groups[groupName].Value;
+
+            return GetValue(UserCommands.Film.Groups.Name);
         }
     }
 }

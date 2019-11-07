@@ -49,12 +49,12 @@ namespace MediaServer.Workflow
                 replyMarkup: replyMarkup);
         }
 
-        public async void LogLastMessage()
+        public void LogLastMessage()
         {
             this.Log(this.lastText);
         }
 
-        public async void Log(string text)
+        public void Log(string text)
         {
             Console.WriteLine($"{this.message.Chat.Id}\t{text}");
         }
