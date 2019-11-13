@@ -36,5 +36,16 @@ namespace MediaServer.Workflow.Constants
                 public const string HashUrl = "location";
             }
         }
+        
+        public static class SortResults
+        {
+            public const string Format = "Sort by {0}";
+            public static readonly Regex Regex = new Regex(string.Format(Format, @"(?<sortingType>\w+)"));
+
+            public static class Groups
+            {
+                public const string SortingType = "sortingType";
+            }
+        }
     }
 }

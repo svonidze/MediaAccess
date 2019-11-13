@@ -23,7 +23,7 @@ BitTorrent:
     - /downloads
 ViewFilter:
   ResultNumberOnPage: 5
-  OrderBy: "Size"
-  SortingDirection: "DESC"
+  SortBy: Size
+  Ascending: false
   MaxSize: null
   MinSize: "1 GB"

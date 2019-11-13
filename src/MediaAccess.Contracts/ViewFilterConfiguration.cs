@@ -4,9 +4,9 @@ namespace MediaServer.Contracts
     {
         public int ResultNumberOnPage { get; set; }
 
-        public string OrderBy { get; set; }
+        public SortingType SortBy { get; set; }
 
-        public string SortingDirection { get; set; }
+        public bool Ascending { get; set; }
 
         public string? MaxSize { get; set; }
 

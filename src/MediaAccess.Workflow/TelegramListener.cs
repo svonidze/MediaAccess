@@ -6,6 +6,7 @@ namespace MediaServer.Workflow
 
     using Common.Collections;
     using Common.Serialization.Json;
+    using Common.System;
 
     using MediaServer.Contracts;
 
@@ -61,7 +62,12 @@ namespace MediaServer.Workflow
         }
 
         private TelegramChatListener GetOrAddChatListener(long chatId) =>
-            this.chatByListener.GetOrAdd(chatId, ci => new TelegramChatListener(this.configuration));
+            this.chatByListener.GetOrAdd(
+                chatId,
+                ci => new TelegramChatListener(
+                    this.configuration.Jackett,
+                    this.configuration.BitTorrent,
+                    this.configuration.ViewFilter.DeepCopy()));
 
         private void OnCallbackQuery(object sender, CallbackQueryEventArgs e)
         {

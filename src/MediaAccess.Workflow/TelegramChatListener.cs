@@ -12,6 +12,7 @@ namespace MediaServer.Workflow
     using Common.Exceptions;
     using Common.Http;
     using Common.Serialization.Json;
+    using Common.System;
     using Common.Text;
 
     using Jackett.Contracts;
@@ -30,7 +31,11 @@ namespace MediaServer.Workflow
     {
         private static readonly string NewLine = Environment.NewLine;
 
-        private readonly Configuration configuration;
+        private readonly JackettAccessConfiguration jackettConfig;
+
+        private readonly BitTorrentClientConfiguration bitTorrentConfig;
+
+        private readonly ViewFilterConfiguration viewFilterConfig;
 
         private readonly ConcurrentDictionary<string, Uri> hashToUrl = new ConcurrentDictionary<string, Uri>();
 
@@ -40,14 +45,18 @@ namespace MediaServer.Workflow
 
         private bool waitingForUserInput;
 
-        public TelegramChatListener(Configuration configuration)
+        public TelegramChatListener(
+            JackettAccessConfiguration jackettConfig,
+            BitTorrentClientConfiguration bitTorrentConfig,
+            ViewFilterConfiguration viewFilterConfig)
         {
-            this.configuration = configuration;
+            this.jackettConfig = jackettConfig;
+            this.bitTorrentConfig = bitTorrentConfig;
+            this.viewFilterConfig = viewFilterConfig;
         }
 
         public void Handle(string queryData, ClientAndServerLogger log)
         {
-            var bitTorrentConfig = this.configuration.BitTorrent;
             if (BotCommands.PickLocationForTorrent.Regex.TryMath(queryData, out var match))
             {
                 var hashedUri = match.Groups[BotCommands.PickLocationForTorrent.Groups.HashUrl].Value;
@@ -81,7 +90,8 @@ namespace MediaServer.Workflow
 
                 this.torrent = torrentCandidates.Single();
 
-                if (bitTorrentConfig == null || bitTorrentConfig.ForceUsingBlackHole || !bitTorrentConfig.DownloadLocations.Any())
+                if (this.bitTorrentConfig == null || bitTorrentConfig.ForceUsingBlackHole
+                    || !this.bitTorrentConfig.DownloadLocations.Any())
                 {
                     this.SendToBlackHoleLocation(log);
                     return;
@@ -90,7 +100,7 @@ namespace MediaServer.Workflow
                 log.ReplyBack(
                     $"Pick download location for torrent #{this.GetResultIndex(this.torrent)}",
                     new InlineKeyboardMarkup(
-                        bitTorrentConfig.DownloadLocations.Select(
+                        this.bitTorrentConfig.DownloadLocations.Select(
                             dl => InlineKeyboardButton.WithCallbackData(
                                 dl,
                                 string.Format(BotCommands.StartTorrent.Format, dl)))));
@@ -113,36 +123,24 @@ namespace MediaServer.Workflow
                 }
 
                 var transmissionClient = new Client(bitTorrentConfig.Url);
-                var newTorrent = transmissionClient.TorrentAddAsync(
-                    new NewTorrent
-                        {
-                            Filename = this.torrent.Link.AbsoluteUri,
-                            DownloadDirectory = location
-                        });
-
-                newTorrent.Wait();
-                if (newTorrent.Exception != null)
+                try
+                {
+                    var newTorrent = transmissionClient.TorrentAdd(
+                        new NewTorrent
+                            {
+                                Filename = this.torrent.Link.AbsoluteUri,
+                                DownloadDirectory = location
+                            });
+                    
+                    log.ReplyBack($"Torrent '{newTorrent.Name}' was added");
+                    log.Log($"Torrent '{newTorrent.Name}' was added {newTorrent.ToJson()}");
+                }
+                catch (Exception exception)
                 {
                     var text = $"Torrent '{this.torrent.Title}' could not be added";
-                    log.ReplyBack(newTorrent.Exception.GetShortDescription(text));
-                    log.Log(newTorrent.Exception.GetFullDescription(text));
-                    return;
+                    log.ReplyBack(exception.GetShortDescription(text));
+                    log.Log(exception.GetFullDescription(text));
                 }
-                else if (newTorrent.Result == null)
-                {
-                    log.ReplyBack($"Adding of torrent '{this.torrent.Title}' returned null with no explanation");
-                    log.LogLastMessage();
-                    return;
-                }
-                else if (!newTorrent.IsCompletedSuccessfully)
-                {
-                    log.ReplyBack($"Torrent '{this.torrent.Title}' could not be added due unknown reasons");
-                    log.LogLastMessage();
-                    return;
-                }
-
-                log.ReplyBack($"Torrent '{newTorrent.Result.Name}' was added");
-                log.Log($"Torrent '{newTorrent.Result.Name}' was added {newTorrent.Result.ToJson()}");
             }
             else if (BotCommands.GoToPage.Regex.TryMath(queryData, out match))
             {
@@ -155,7 +153,27 @@ namespace MediaServer.Workflow
                     return;
                 }
 
-                this.ShowResults(page, log);
+                this.ShowResults(log, page);
+            }
+            else if (BotCommands.SortResults.Regex.TryMath(queryData, out match))
+            {
+                var sortingTypeString = match.Groups[BotCommands.SortResults.Groups.SortingType].Value;
+                if (!sortingTypeString.TryParseToEnum<SortingType>(out var sortingType))
+                {
+                    log.Text($"Could not parse '{queryData}' as {nameof(SortingType)}");
+                    log.LogLastMessage();
+                    return;
+                }
+
+                if (this.viewFilterConfig.SortBy == sortingType)
+                {
+                    this.viewFilterConfig.Ascending = !this.viewFilterConfig.Ascending;
+                }
+                else
+                {
+                    this.viewFilterConfig.SortBy = sortingType;
+                }
+                this.ShowResults(log, 1);
             }
             else
             {
@@ -209,11 +227,10 @@ namespace MediaServer.Workflow
             else
             {
                 log.ReplyBack($"No idea what to do with your request");
-                log.Log($"Received a text message in chat {message.Chat.Id}: {messageText}");
+                log.Log($"Received a text message in chat {message.Chat.Id}: '{messageText}'");
             }
         }
         
-
         private int GetResultIndex(TrackerCacheResult t) => this.torrents.Results.IndexOf(t) + 1;
 
         private void SearchTorrents(string searchRequest, ClientAndServerLogger log)
@@ -229,12 +246,11 @@ namespace MediaServer.Workflow
             log.TextWithAction(action, ChatAction.Typing);
             log.LogLastMessage();
 
-            var jackett = new JackettIntegration(this.configuration.Jackett);
+            var jackett = new JackettIntegration(this.jackettConfig);
             try
             {
                 this.torrents = null;
                 this.torrents = jackett.SearchTorrents(searchRequest);
-                this.torrents.Results = this.torrents.Results.OrderByDescending(r => r.Size).ToArray();
 
                 log.Log($"Done {action}");
             }
@@ -245,7 +261,7 @@ namespace MediaServer.Workflow
                 log.Log(exception.GetFullDescription(message));
             }
 
-            this.ShowResults(1, log);
+            this.ShowResults(log, 1);
         }
 
         private void SendToBlackHoleLocation(ClientAndServerLogger log)
@@ -263,7 +279,7 @@ namespace MediaServer.Workflow
             this.torrent = null;
         }
 
-        private void ShowResults(int pageNumber, ClientAndServerLogger log)
+        private void ShowResults(ClientAndServerLogger log, int pageNumber)
         {
             if (this.torrents == null)
             {
@@ -280,19 +296,49 @@ namespace MediaServer.Workflow
                 log.LogLastMessage();
                 return;
             }
-                
-            var resultNumberOnPage = this.configuration.ViewFilter.ResultNumberOnPage;
+            var query = this.torrents.Results.AsEnumerable();
+
+            var resultNumberOnPage = this.viewFilterConfig.ResultNumberOnPage;
             var lasPageNumber =
                 (int)Math.Ceiling((double)this.torrents.Results.Count / resultNumberOnPage);
-            var resultsToShow = this.torrents.Results
-                .Skip(resultNumberOnPage* (pageNumber - 1))
-                .Take(resultNumberOnPage).ToArray();
 
-            InlineKeyboardButton PrepareButton(string text, int page, params int[] excludePages) =>
-                page != pageNumber && page > 0 && page <= lasPageNumber
-                && (!excludePages.Any() || !excludePages.Contains(page))
-                    ? InlineKeyboardButton.WithCallbackData(text, $"Go {page} page")
-                    : null;
+            Func<TrackerCacheResult, object> sort;
+            var sortingType = this.viewFilterConfig.SortBy;
+            switch (sortingType)
+            {
+                case SortingType.Default:
+                case SortingType.Size:
+                    sort = r => r.Size; 
+                    break;
+                case SortingType.Date:
+                    sort = r => r.PublishDate;
+                    break;
+                case SortingType.Title:
+                    sort = r => r.Title;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(sortingType), sortingType, null);
+            }
+
+            query = this.viewFilterConfig.Ascending
+                ? query.OrderBy(sort)
+                : query.OrderByDescending(sort);
+
+            
+            var resultsToShow = query
+                .Skip(resultNumberOnPage* (pageNumber - 1))
+                .Take(resultNumberOnPage)
+                .ToArray();
+
+            InlineKeyboardButton PrepareGoToButton(Emoji emoji, int page, params int[] excludePages) =>
+                page == pageNumber || page <= 0 || page > lasPageNumber || excludePages.Any() && excludePages.Contains(page)
+                    ? null
+                    : InlineKeyboardButton.WithCallbackData(emoji.ToUnicode(), string.Format(BotCommands.GoToPage.Format, page));
+
+            Emoji SortingDirectionEmoji(SortingType st) =>
+                this.viewFilterConfig.SortBy == st && this.viewFilterConfig.Ascending
+                    ? Emojies.UpwardsBlackArrow
+                    : Emojies.DownwardsBlackArrow;
 
             var inlineKeyboardMarkup = new InlineKeyboardMarkup(
                 new[]
@@ -307,15 +353,21 @@ namespace MediaServer.Workflow
                                     this.hashToUrl.TryAdd(hashedUrl, uri);
                                     return InlineKeyboardButton.WithCallbackData(
                                         this.GetResultIndex(r).ToString(),
-                                        String.Format(BotCommands.PickLocationForTorrent.Format, hashedUrl));
+                                        string.Format(BotCommands.PickLocationForTorrent.Format, hashedUrl));
                                 }),
                         new[]
                             {
-                                PrepareButton("<<-", 1), 
-                                PrepareButton("<-", pageNumber - 1, excludePages: new[] { 1, lasPageNumber }),
-                                PrepareButton("->", pageNumber + 1, excludePages: new[] { 1, lasPageNumber }),
-                                PrepareButton("-->", lasPageNumber, excludePages: 1)
-                            }.Where(b => b != null)
+                                PrepareGoToButton(Emojies.LastTrackButton, 1), 
+                                PrepareGoToButton(Emojies.ReverseButton, pageNumber - 1, excludePages: new[] { 1, lasPageNumber }),
+                                PrepareGoToButton(Emojies.PlayButton, pageNumber + 1, excludePages: new[] { 1, lasPageNumber }),
+                                PrepareGoToButton(Emojies.NextTrackButton, lasPageNumber, excludePages: 1)
+                            }.Where(b => b != null),
+                        EnumUtils.EnumToList<SortingType>()
+                            .Except(SortingType.Default)
+                            .Select(st => InlineKeyboardButton.WithCallbackData(
+                                $"{SortingDirectionEmoji(st).ToUnicode()} {st}",
+                                string.Format(BotCommands.SortResults.Format, st)))
+                        
                     });
 
             string GetReadableSize(long? size) =>
@@ -341,5 +393,8 @@ namespace MediaServer.Workflow
                     .JoinToString(NewLine + NewLine),
                 inlineKeyboardMarkup);
         }
+        
+        
+        
     }
 }

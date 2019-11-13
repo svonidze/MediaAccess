@@ -16,6 +16,7 @@
       <ProjectReference Include="..\Common.Cryptography\Common.Cryptography.csproj" />
       <ProjectReference Include="..\Common.DateTime\Common.DateTime.csproj" />
       <ProjectReference Include="..\Common.Http\Common.Http.csproj" />
+      <ProjectReference Include="..\Common.System\Common.System.csproj" />
       <ProjectReference Include="..\Jackett.Contracts\Jackett.Contracts.csproj" />
       <ProjectReference Include="..\MediaAccess.Contracts\MediaAccess.Contracts.csproj" />
     </ItemGroup>

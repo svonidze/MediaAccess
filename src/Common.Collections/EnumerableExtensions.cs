@@ -92,7 +92,8 @@
 
         public static IEnumerable<T> Except<T>(this IEnumerable<T> first, params T[] second)
         {
-            return first.Except(second);
+            // StackOverflow while using .Except(second);
+            return first.Where(f => !second.Contains(f)); 
         }
 
         public static void Foreach<T>(this IEnumerable<T> enumerable, Action<T> action)
