@@ -34,6 +34,19 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MediaAccess.Workflow.Tests"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common.System", "src\Common.System\Common.System.csproj", "{9183D58C-5AC7-478B-8B72-20B91F10E45A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Files", "Solution Files", "{BD5B7075-1B21-47E6-AA42-473886D15138}"
+ProjectSection(SolutionItems) = preProject
+	Dockerfile = Dockerfile
+	MediaAccess.sln.DotSettings = MediaAccess.sln.DotSettings
+	MediaAccess.sln.DotSettings.user = MediaAccess.sln.DotSettings.user
+	Sbeep.DotSettings = Sbeep.DotSettings
+	.gitignore = .gitignore
+	.dockerignore = .dockerignore
+	README.md = README.md
+	config.example.yaml = config.example.yaml
+	Dockerfile.debian-arm32 = Dockerfile.debian-arm32
+EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

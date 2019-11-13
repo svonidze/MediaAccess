@@ -12,18 +12,24 @@
 
     class Program
     {
+        private const string ConfigFilePath = "/config/config.yaml";
+        
         // TODO utilize library to parse CLI args 
         static void Main(string[] args)
         {
             AppDomain.CurrentDomain.UnhandledException += UnhandledExceptionTrapper;
 
-            if (!args.Any())
+            string configurationFilePath;
+            if (args.Any())
             {
-                Console.WriteLine("No configuration file path passed");
-                Environment.Exit(1);
+                configurationFilePath = args.First();
+            }
+            else
+            {
+                Console.WriteLine($"No configuration file path passed, trying to use the default one at {ConfigFilePath}");
+                configurationFilePath = ConfigFilePath;
             }
 
-            var configurationFilePath = args.First();
             if (!File.Exists(configurationFilePath))
             {
                 Console.WriteLine($"No configuration file found at {configurationFilePath}");
