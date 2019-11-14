@@ -90,7 +90,7 @@ namespace MediaServer.Workflow
 
                 this.torrent = torrentCandidates.Single();
 
-                if (this.bitTorrentConfig == null || bitTorrentConfig.ForceUsingBlackHole
+                if (this.bitTorrentConfig == null || this.bitTorrentConfig.ForceUsingBlackHole
                     || !this.bitTorrentConfig.DownloadLocations.Any())
                 {
                     this.SendToBlackHoleLocation(log);
@@ -116,7 +116,7 @@ namespace MediaServer.Workflow
 
                 var location = match.Groups[BotCommands.StartTorrent.Groups.HashUrl].Value;
 
-                if (bitTorrentConfig == null)
+                if (this.bitTorrentConfig == null)
                 {
                     this.SendToBlackHoleLocation(log);
                     return;
@@ -173,7 +173,7 @@ namespace MediaServer.Workflow
                 {
                     this.viewFilterConfig.SortBy = sortingType;
                 }
-                this.ShowResults(log, 1);
+                this.ShowResults(log);
             }
             else
             {
@@ -237,7 +237,7 @@ namespace MediaServer.Workflow
         {
             if (searchRequest.IsNullOrEmpty())
             {
-                log.ReplyBack("Search request is recognized as empty");
+                log.ReplyBack($"{nameof(searchRequest)} is recognized as empty");
                 log.LogLastMessage();
                 return;
             }
@@ -261,7 +261,7 @@ namespace MediaServer.Workflow
                 log.Log(exception.GetFullDescription(message));
             }
 
-            this.ShowResults(log, 1);
+            this.ShowResults(log);
         }
 
         private void SendToBlackHoleLocation(ClientAndServerLogger log)
@@ -279,7 +279,7 @@ namespace MediaServer.Workflow
             this.torrent = null;
         }
 
-        private void ShowResults(ClientAndServerLogger log, int pageNumber)
+        private void ShowResults(ClientAndServerLogger log, int pageNumber = 1)
         {
             if (this.torrents == null)
             {
@@ -296,39 +296,46 @@ namespace MediaServer.Workflow
                 log.LogLastMessage();
                 return;
             }
-            var query = this.torrents.Results.AsEnumerable();
+
+            if (pageNumber < 1)
+            {
+                log.Text($"{nameof(pageNumber)} is less than 1");
+                log.LogLastMessage();
+                return;
+            }
 
             var resultNumberOnPage = this.viewFilterConfig.ResultNumberOnPage;
             var lasPageNumber =
                 (int)Math.Ceiling((double)this.torrents.Results.Count / resultNumberOnPage);
 
-            Func<TrackerCacheResult, object> sort;
-            var sortingType = this.viewFilterConfig.SortBy;
-            switch (sortingType)
+            TrackerCacheResult[] FilterAndSortResults()
             {
-                case SortingType.Default:
-                case SortingType.Size:
-                    sort = r => r.Size; 
-                    break;
-                case SortingType.Date:
-                    sort = r => r.PublishDate;
-                    break;
-                case SortingType.Title:
-                    sort = r => r.Title;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(sortingType), sortingType, null);
+                Func<TrackerCacheResult, object> sort;
+                var sortingType = this.viewFilterConfig.SortBy;
+                switch (sortingType)
+                {
+                    case SortingType.Default:
+                    case SortingType.Size:
+                        sort = r => r.Size;
+                        break;
+                    case SortingType.Date:
+                        sort = r => r.PublishDate;
+                        break;
+                    case SortingType.Title:
+                        sort = r => r.Title;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(sortingType), sortingType, message: null);
+                }
+
+                var query = this.torrents.Results.AsEnumerable();
+
+                query = this.viewFilterConfig.Ascending
+                    ? query.OrderBy(sort)
+                    : query.OrderByDescending(sort);
+
+                return query.Skip(resultNumberOnPage * (pageNumber - 1)).Take(resultNumberOnPage).ToArray();
             }
-
-            query = this.viewFilterConfig.Ascending
-                ? query.OrderBy(sort)
-                : query.OrderByDescending(sort);
-
-            
-            var resultsToShow = query
-                .Skip(resultNumberOnPage* (pageNumber - 1))
-                .Take(resultNumberOnPage)
-                .ToArray();
 
             InlineKeyboardButton PrepareGoToButton(Emoji emoji, int page, params int[] excludePages) =>
                 page == pageNumber || page <= 0 || page > lasPageNumber || excludePages.Any() && excludePages.Contains(page)
@@ -340,6 +347,7 @@ namespace MediaServer.Workflow
                     ? Emojies.UpwardsBlackArrow
                     : Emojies.DownwardsBlackArrow;
 
+            var resultsToShow = FilterAndSortResults();
             var inlineKeyboardMarkup = new InlineKeyboardMarkup(
                 new[]
                     {
@@ -385,16 +393,13 @@ namespace MediaServer.Workflow
                 + NewLine + NewLine
                 + resultsToShow.Select(
                         r => $"{this.GetResultIndex(r)}. {GetReadableSize(r.Size)} {r.Title}" 
-                            + $"{NewLine}"
+                            + NewLine
                             + $"{r.PublishDate:s}" 
-                            + $"{NewLine}" 
+                            + NewLine 
                             + $"{r.Tracker} {nameof(r.Files)}={r.Files} "
                             + $"{nameof(r.Grabs)}={r.Grabs} {nameof(r.Seeders)}={r.Seeders} ")
                     .JoinToString(NewLine + NewLine),
                 inlineKeyboardMarkup);
         }
-        
-        
-        
     }
 }

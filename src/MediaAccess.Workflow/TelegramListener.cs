@@ -15,7 +15,7 @@ namespace MediaServer.Workflow
     using Telegram.Bot.Types;
 
     // TODO use log library
-    public class TelegramListener
+    public class TelegramListener : IDisposable
     {
         private readonly ITelegramBotClient botClient;
 
@@ -42,6 +42,11 @@ namespace MediaServer.Workflow
                     Timeout = this.configuration.TelegramBot.Timeout ?? TimeSpan.FromMinutes(1)
                 };
         }
+        
+        public void Dispose()
+        {
+            this.StopReceiving();
+        }
 
         public void StartReceiving()
         {
@@ -56,6 +61,8 @@ namespace MediaServer.Workflow
 
         public void StopReceiving()
         {
+            Console.WriteLine($"{nameof(this.StopReceiving)}");
+            
             this.botClient.OnMessage -= this.OnMessage;
             this.botClient.OnCallbackQuery -= this.OnCallbackQuery;
             this.botClient.StopReceiving();

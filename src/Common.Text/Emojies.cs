@@ -1,10 +1,11 @@
 namespace Common.Text
 {
+    // https://apps.timwhitlock.info/emoji/tables/unicode
+    // http://www.unicode.org/emoji/charts/full-emoji-list.html
     public static class Emojies
     {
-        private static Emoji Emoji(string code) => new Emoji{Code = code};
+        private static Emoji Emoji(string code) => new Emoji { Code = code };
         
-            
         public static readonly Emoji PlayButton = Emoji("25B6");
         public static readonly Emoji ReverseButton = Emoji("25C0");
         public static readonly Emoji NextTrackButton = Emoji("23ED");

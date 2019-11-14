@@ -39,7 +39,7 @@
             var configuration = File.ReadAllText(configurationFilePath).FromYamlTo<Configuration>();
             Console.WriteLine($"{nameof(configuration)} is loaded from {configurationFilePath}");
 
-            var telegramListener = new TelegramListener(configuration);
+            using var telegramListener = new TelegramListener(configuration);
             telegramListener.StartReceiving();
             Thread.Sleep(int.MaxValue);
         }
