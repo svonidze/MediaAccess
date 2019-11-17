@@ -2,7 +2,9 @@ namespace MediaServer.Workflow
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Collections.Generic;
     using System.Linq;
+    using System.Text.RegularExpressions;
 
     using BitTorrent.Contracts;
 
@@ -56,23 +58,33 @@ namespace MediaServer.Workflow
 
         public void Handle(string queryData, ITelegramClientAndServerLogger log)
         {
-            if (BotCommands.PickLocationForTorrent.Regex.TryMath(queryData, out var match))
+            var actions = new Dictionary<Regex, Action<Match>>
+                {
+                    { BotCommands.PickLocationForTorrent.Regex, PickLocationForTorrent },
+                    { BotCommands.StartTorrent.Regex, StartTorrent },
+                    { BotCommands.GoToPage.Regex, GoToPage },
+                    { BotCommands.SortResults.Regex, SortResults }
+                };
+            
+            void PickLocationForTorrent(Match match)
             {
                 if (!this.bitTorrentClient.IsSetUp)
                 {
-                    log.ReplyBack($"{nameof(this.bitTorrentClient)} is not set up. The command {nameof(BotCommands.PickLocationForTorrent)} cannot be executed.");
+                    log.ReplyBack(
+                        $"{nameof(this.bitTorrentClient)} is not set up. The command {nameof(BotCommands.PickLocationForTorrent)} cannot be executed.");
                     log.LogLastMessage();
                     return;
                 }
-                
+
                 var downloadLocations = this.bitTorrentClient.ListDownloadLocations();
                 if (downloadLocations == null || !downloadLocations.Any())
                 {
-                    log.ReplyBack($"No {nameof(downloadLocations)} are set up. The command {nameof(BotCommands.PickLocationForTorrent)} cannot be executed.");
+                    log.ReplyBack(
+                        $"No {nameof(downloadLocations)} are set up. The command {nameof(BotCommands.PickLocationForTorrent)} cannot be executed.");
                     log.LogLastMessage();
                     return;
                 }
-                
+
                 var hashedUri = match.Groups[BotCommands.PickLocationForTorrent.Groups.HashUrl].Value;
                 if (!this.hashToUrl.TryGetValue(hashedUri, out var uri))
                 {
@@ -86,7 +98,7 @@ namespace MediaServer.Workflow
                 {
                     log.Text("Found no torrents, probably Search results are expired, repeat your search");
                     log.Log(
-                        $"Torrent could not be found with URL={uri.AbsoluteUri}, " 
+                        $"Torrent could not be found with URL={uri.AbsoluteUri}, "
                         + $"last search has {this.torrents?.Results?.Count} results");
                     return;
                 }
@@ -94,10 +106,10 @@ namespace MediaServer.Workflow
                 if (torrentCandidates.Length > 1)
                 {
                     log.Text(
-                        "Strange, found more than one torrent with the same characteristics, " 
+                        "Strange, found more than one torrent with the same characteristics, "
                         + "probably search results are corrupted, repeat your search");
                     log.Log(
-                        $"Found {torrentCandidates.Length} torrents with URL={uri.AbsoluteUri}, " 
+                        $"Found {torrentCandidates.Length} torrents with URL={uri.AbsoluteUri}, "
                         + $"last search has {this.torrents?.Results?.Count} results");
                     return;
                 }
@@ -108,19 +120,19 @@ namespace MediaServer.Workflow
                     $"Pick download location for torrent #{this.GetResultIndex(this.torrent)}",
                     new InlineKeyboardMarkup(
                         downloadLocations.Select(
-                            dl => InlineKeyboardButton.WithCallbackData(
-                                dl,
-                                string.Format(BotCommands.StartTorrent.Format, dl)))));
+                            dl => InlineKeyboardButton.WithCallbackData(dl, string.Format(BotCommands.StartTorrent.Format, dl)))));
             }
-            else if (BotCommands.StartTorrent.Regex.TryMath(queryData, out match))
+
+            void StartTorrent(Match match)
             {
                 if (!this.bitTorrentClient.IsSetUp)
                 {
-                    log.ReplyBack($"{nameof(this.bitTorrentClient)} is not ste up. The command {nameof(BotCommands.StartTorrent)} cannot be executed.");
+                    log.ReplyBack(
+                        $"{nameof(this.bitTorrentClient)} is not ste up. The command {nameof(BotCommands.StartTorrent)} cannot be executed.");
                     log.LogLastMessage();
                     return;
                 }
-                
+
                 if (this.torrent == null)
                 {
                     log.Text("No torrent is picked");
@@ -132,11 +144,12 @@ namespace MediaServer.Workflow
 
                 try
                 {
-                    var newTorrent = this.bitTorrentClient.AddTorrent(new NewTorrent
-                        {
-                            FileName = this.torrent.Link.AbsoluteUri,
-                            DownloadDirectory = location
-                        });
+                    var newTorrent = this.bitTorrentClient.AddTorrent(
+                        new NewTorrent
+                            {
+                                FileName = this.torrent.Link.AbsoluteUri,
+                                DownloadDirectory = location
+                            });
 
                     log.ReplyBack($"Torrent '{newTorrent.Name}' was added");
                     log.Log($"Torrent '{newTorrent.Name}' was added {newTorrent.ToJson()}");
@@ -148,7 +161,8 @@ namespace MediaServer.Workflow
                     log.Log(exception.GetFullDescription(text));
                 }
             }
-            else if (BotCommands.GoToPage.Regex.TryMath(queryData, out match))
+
+            void GoToPage(Match match)
             {
                 var pageString = match.Groups[BotCommands.GoToPage.Groups.Page].Value;
                 if (!int.TryParse(pageString, out var page))
@@ -161,7 +175,8 @@ namespace MediaServer.Workflow
 
                 this.ShowResults(log, page);
             }
-            else if (BotCommands.SortResults.Regex.TryMath(queryData, out match))
+
+            void SortResults(Match match)
             {
                 var sortingTypeString = match.Groups[BotCommands.SortResults.Groups.SortingType].Value;
                 if (!sortingTypeString.TryParseToEnum<SortingType>(out var sortingType))
@@ -179,13 +194,22 @@ namespace MediaServer.Workflow
                 {
                     this.viewFilterConfig.SortBy = sortingType;
                 }
+
                 this.ShowResults(log);
             }
-            else
+
+            
+            foreach (var regex in actions.Keys)
             {
-                log.Log($"'{queryData}' is not supported");
-                log.Text($"Your action '{queryData}' is not supported. Maybe you click old buttons?");
+                if (!regex.TryMath(queryData, out var match))
+                    continue;
+                
+                actions[regex](match);
+                return;
             }
+
+            log.Log($"'{queryData}' is not supported");
+            log.Text($"Your action '{queryData}' is not supported. Maybe you click old buttons?");
         }
 
         public void Handle(Message message, ITelegramClientAndServerLogger log)
@@ -197,23 +221,35 @@ namespace MediaServer.Workflow
                 return;
             }
 
-            if (UserCommands.StartBotCommunication.Regex.TryMath(messageText, out var match))
+            var actions = new Dictionary<Regex, Action<Match>>
+                {
+                    { UserCommands.StartBotCommunication.Regex, StartBotCommunication },
+                    { UserCommands.Kinopoisk.Regex, Kinopoisk },
+                    { UserCommands.Film.Regex, Film },
+                    { UserCommands.Torrent.Regex, Torrent },
+                };
+            
+            void StartBotCommunication(Match match)
             {
-                log.Text("Greeting! Here you can search for torrents and send them to a favorite BitTorrent client. Lets start with typing /t or /torrent.");
-                log.Log(messageText);
+                log.Text(
+                    "Greeting! Here you can search for torrents and send them to a favorite BitTorrent client. Lets start with typing /t or /torrent.");
+                log.Log(match.Value);
             }
-            else if (UserCommands.Kinopoisk.Regex.TryMath(messageText, out match))
+
+            void Kinopoisk(Match match)
             {
                 var searchRequest =
                     $"{match.Groups[UserCommands.Kinopoisk.Groups.RusName]} {match.Groups[UserCommands.Kinopoisk.Groups.EngName]}";
                 this.SearchTorrents(searchRequest, log);
             }
-            else if (UserCommands.Film.Regex.TryMath(messageText, out match))
+
+            void Film(Match match)
             {
                 var searchRequest = match.Groups[UserCommands.Film.Groups.Name].Value;
                 this.SearchTorrents(searchRequest, log);
             }
-            else if (UserCommands.Torrent.Regex.TryMath(messageText, out match))
+
+            void Torrent(Match match)
             {
                 var searchRequest = match.Groups[UserCommands.Torrent.Groups.SearchRequest];
                 if (searchRequest.Value.IsNullOrEmpty())
@@ -225,7 +261,18 @@ namespace MediaServer.Workflow
 
                 this.SearchTorrents(searchRequest.Value, log);
             }
-            else if (this.waitingForUserInput)
+
+
+            foreach (var regex in actions.Keys)
+            {
+                if (!regex.TryMath(messageText, out var match))
+                    continue;
+                
+                actions[regex](match);
+                return;
+            }
+                
+            if (this.waitingForUserInput)
             {
                 this.waitingForUserInput = false;
                 this.SearchTorrents(messageText, log);
