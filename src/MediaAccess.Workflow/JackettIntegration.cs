@@ -9,7 +9,7 @@ namespace MediaServer.Workflow
 
     using Jackett.Contracts;
 
-    public class JackettIntegration
+    public class JackettIntegration : IJackettIntegration
     {
         private readonly IJackettAccessConfiguration config;
 

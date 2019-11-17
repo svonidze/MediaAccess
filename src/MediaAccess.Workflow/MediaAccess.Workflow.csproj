@@ -12,6 +12,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\BitTorrent.Contracts\BitTorrent.Contracts.csproj" />
       <ProjectReference Include="..\Common.Collections\Common.Collections.csproj" />
       <ProjectReference Include="..\Common.Cryptography\Common.Cryptography.csproj" />
       <ProjectReference Include="..\Common.DateTime\Common.DateTime.csproj" />

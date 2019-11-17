@@ -5,12 +5,14 @@
     using System.Linq;
     using System.Threading;
 
+    using Castle.Facilities.TypedFactory;
+    using Castle.Windsor;
+
     using Common.Serialization.Yaml;
 
     using MediaServer.Contracts;
-    using MediaServer.Workflow;
 
-    class Program
+    internal class Program
     {
         private const string ConfigFilePath = "/config/config.yaml";
         
@@ -39,7 +41,8 @@
             var configuration = File.ReadAllText(configurationFilePath).FromYamlTo<Configuration>();
             Console.WriteLine($"{nameof(configuration)} is loaded from {configurationFilePath}");
 
-            using var telegramListener = new TelegramListener(configuration);
+            using var container = InitializeContainer(configuration);
+            var telegramListener = container.Resolve<ITelegramListener>();
             telegramListener.StartReceiving();
             Thread.Sleep(int.MaxValue);
         }
@@ -47,6 +50,15 @@
         private static void UnhandledExceptionTrapper(object sender, UnhandledExceptionEventArgs e)
         {
             Console.WriteLine(e.ExceptionObject.ToString());
+        }
+
+        private static WindsorContainer InitializeContainer(Configuration configuration)
+        {
+            var container = new WindsorContainer();
+            container.AddFacility<TypedFactoryFacility>();
+
+            container.Install(new WindsorInstaller(configuration));
+            return container;
         }
     }
 }

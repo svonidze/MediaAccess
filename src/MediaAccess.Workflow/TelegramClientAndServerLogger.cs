@@ -3,12 +3,14 @@ namespace MediaServer.Workflow
     using System;
     using System.Threading;
 
+    using MediaServer.Contracts;
+
     using Telegram.Bot;
     using Telegram.Bot.Types;
     using Telegram.Bot.Types.Enums;
     using Telegram.Bot.Types.ReplyMarkups;
 
-    public class ClientAndServerLogger
+    public class TelegramClientAndServerLogger : ITelegramClientAndServerLogger
     {
         private readonly ITelegramBotClient botClient;
 
@@ -16,7 +18,7 @@ namespace MediaServer.Workflow
 
         private string lastText;
 
-        public ClientAndServerLogger(ITelegramBotClient botClient, Message message)
+        public TelegramClientAndServerLogger(ITelegramBotClient botClient, Message message)
         {
             this.botClient = botClient;
             this.message = message;

@@ -1,4 +1,4 @@
-namespace MediaServer.Contracts
+namespace BitTorrent.Contracts
 {
     using JetBrains.Annotations;
 
@@ -6,10 +6,8 @@ namespace MediaServer.Contracts
     {
         public BitTorrentType BitTorrentType { get; set; }
 
-        public bool ForceUsingBlackHole { get; set; }
-        
         public string Url { get; set; }
-        
+
         [NotNull]
         public string[] DownloadLocations { get; set; }
     }

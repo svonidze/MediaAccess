@@ -3,19 +3,21 @@ namespace MediaServer.Workflow
     using System;
     using System.Collections.Concurrent;
     using System.Linq;
-    using System.Net.Http;
+
+    using BitTorrent.Contracts;
 
     using ByteSizeLib;
 
     using Common.Collections;
     using Common.Cryptography;
     using Common.Exceptions;
-    using Common.Http;
     using Common.Serialization.Json;
     using Common.System;
     using Common.Text;
 
     using Jackett.Contracts;
+
+    using JetBrains.Annotations;
 
     using MediaServer.Contracts;
     using MediaServer.Workflow.Constants;
@@ -24,16 +26,13 @@ namespace MediaServer.Workflow
     using Telegram.Bot.Types.Enums;
     using Telegram.Bot.Types.ReplyMarkups;
 
-    using Transmission.API.RPC;
-    using Transmission.API.RPC.Entity;
-
-    public class TelegramChatListener
+    public class TelegramChatListener : ITelegramChatListener
     {
         private static readonly string NewLine = Environment.NewLine;
 
-        private readonly JackettAccessConfiguration jackettConfig;
+        private readonly IJackettIntegration jackett;
 
-        private readonly BitTorrentClientConfiguration bitTorrentConfig;
+        private readonly IBitTorrentClient bitTorrentClient;
 
         private readonly ViewFilterConfiguration viewFilterConfig;
 
@@ -46,19 +45,34 @@ namespace MediaServer.Workflow
         private bool waitingForUserInput;
 
         public TelegramChatListener(
-            JackettAccessConfiguration jackettConfig,
-            BitTorrentClientConfiguration bitTorrentConfig,
-            ViewFilterConfiguration viewFilterConfig)
+            [NotNull] ViewFilterConfiguration viewFilterConfig,
+            [NotNull] IJackettIntegration jackett,
+            [NotNull] IBitTorrentClient bitTorrentClient)
         {
-            this.jackettConfig = jackettConfig;
-            this.bitTorrentConfig = bitTorrentConfig;
             this.viewFilterConfig = viewFilterConfig;
+            this.jackett = jackett;
+            this.bitTorrentClient = bitTorrentClient;
         }
 
-        public void Handle(string queryData, ClientAndServerLogger log)
+        public void Handle(string queryData, ITelegramClientAndServerLogger log)
         {
             if (BotCommands.PickLocationForTorrent.Regex.TryMath(queryData, out var match))
             {
+                if (!this.bitTorrentClient.IsSetUp)
+                {
+                    log.ReplyBack($"{nameof(this.bitTorrentClient)} is not set up. The command {nameof(BotCommands.PickLocationForTorrent)} cannot be executed.");
+                    log.LogLastMessage();
+                    return;
+                }
+                
+                var downloadLocations = this.bitTorrentClient.ListDownloadLocations();
+                if (downloadLocations == null || !downloadLocations.Any())
+                {
+                    log.ReplyBack($"No {nameof(downloadLocations)} are set up. The command {nameof(BotCommands.PickLocationForTorrent)} cannot be executed.");
+                    log.LogLastMessage();
+                    return;
+                }
+                
                 var hashedUri = match.Groups[BotCommands.PickLocationForTorrent.Groups.HashUrl].Value;
                 if (!this.hashToUrl.TryGetValue(hashedUri, out var uri))
                 {
@@ -90,23 +104,23 @@ namespace MediaServer.Workflow
 
                 this.torrent = torrentCandidates.Single();
 
-                if (this.bitTorrentConfig == null || this.bitTorrentConfig.ForceUsingBlackHole
-                    || !this.bitTorrentConfig.DownloadLocations.Any())
-                {
-                    this.SendToBlackHoleLocation(log);
-                    return;
-                }
-
                 log.ReplyBack(
                     $"Pick download location for torrent #{this.GetResultIndex(this.torrent)}",
                     new InlineKeyboardMarkup(
-                        this.bitTorrentConfig.DownloadLocations.Select(
+                        downloadLocations.Select(
                             dl => InlineKeyboardButton.WithCallbackData(
                                 dl,
                                 string.Format(BotCommands.StartTorrent.Format, dl)))));
             }
             else if (BotCommands.StartTorrent.Regex.TryMath(queryData, out match))
             {
+                if (!this.bitTorrentClient.IsSetUp)
+                {
+                    log.ReplyBack($"{nameof(this.bitTorrentClient)} is not ste up. The command {nameof(BotCommands.StartTorrent)} cannot be executed.");
+                    log.LogLastMessage();
+                    return;
+                }
+                
                 if (this.torrent == null)
                 {
                     log.Text("No torrent is picked");
@@ -116,22 +130,14 @@ namespace MediaServer.Workflow
 
                 var location = match.Groups[BotCommands.StartTorrent.Groups.HashUrl].Value;
 
-                if (this.bitTorrentConfig == null)
-                {
-                    this.SendToBlackHoleLocation(log);
-                    return;
-                }
-
-                var transmissionClient = new Client(bitTorrentConfig.Url);
                 try
                 {
-                    var newTorrent = transmissionClient.TorrentAdd(
-                        new NewTorrent
-                            {
-                                Filename = this.torrent.Link.AbsoluteUri,
-                                DownloadDirectory = location
-                            });
-                    
+                    var newTorrent = this.bitTorrentClient.AddTorrent(new NewTorrent
+                        {
+                            FileName = this.torrent.Link.AbsoluteUri,
+                            DownloadDirectory = location
+                        });
+
                     log.ReplyBack($"Torrent '{newTorrent.Name}' was added");
                     log.Log($"Torrent '{newTorrent.Name}' was added {newTorrent.ToJson()}");
                 }
@@ -182,7 +188,7 @@ namespace MediaServer.Workflow
             }
         }
 
-        public void Handle(Message message, ClientAndServerLogger log)
+        public void Handle(Message message, ITelegramClientAndServerLogger log)
         {
             var messageText = message.Text;
             if (messageText == null)
@@ -233,7 +239,7 @@ namespace MediaServer.Workflow
         
         private int GetResultIndex(TrackerCacheResult t) => this.torrents.Results.IndexOf(t) + 1;
 
-        private void SearchTorrents(string searchRequest, ClientAndServerLogger log)
+        private void SearchTorrents(string searchRequest, ITelegramClientAndServerLogger log)
         {
             if (searchRequest.IsNullOrEmpty())
             {
@@ -246,11 +252,10 @@ namespace MediaServer.Workflow
             log.TextWithAction(action, ChatAction.Typing);
             log.LogLastMessage();
 
-            var jackett = new JackettIntegration(this.jackettConfig);
             try
             {
                 this.torrents = null;
-                this.torrents = jackett.SearchTorrents(searchRequest);
+                this.torrents = this.jackett.SearchTorrents(searchRequest);
 
                 log.Log($"Done {action}");
             }
@@ -264,22 +269,7 @@ namespace MediaServer.Workflow
             this.ShowResults(log);
         }
 
-        private void SendToBlackHoleLocation(ClientAndServerLogger log)
-        {
-            var response = new HttpRequestBuilder()
-                .SetUrl(this.torrent.BlackholeLink.AbsoluteUri)
-                .RequestAndValidate<ActionDoneResponse>(HttpMethod.Get);
-
-            var success = response.result == "success";
-
-            log.Text(
-                $"Sending to Blackhole was{(success ? null : " NOT")} DONE "
-                + $"for '{this.torrent.Title}'{(success ? null : response.ToJson())}");
-            log.LogLastMessage();
-            this.torrent = null;
-        }
-
-        private void ShowResults(ClientAndServerLogger log, int pageNumber = 1)
+        private void ShowResults(ITelegramClientAndServerLogger log, int pageNumber = 1)
         {
             if (this.torrents == null)
             {
@@ -392,7 +382,7 @@ namespace MediaServer.Workflow
                 + orderedIndexes.Select(i => $"{i.Name} ({i.Results})").JoinToString(", ") 
                 + NewLine + NewLine
                 + resultsToShow.Select(
-                        r => $"{this.GetResultIndex(r)}. {GetReadableSize(r.Size)} {r.Title}" 
+                        r => $"{this.GetResultIndex(r)}. {GetReadableSize(r.Size)} {r.CategoryDesc} {r.Title}" 
                             + NewLine
                             + $"{r.PublishDate:s}" 
                             + NewLine 

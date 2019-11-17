@@ -1,4 +1,4 @@
-namespace MediaServer.Contracts
+namespace BitTorrent.Contracts
 {
     public enum BitTorrentType
     {

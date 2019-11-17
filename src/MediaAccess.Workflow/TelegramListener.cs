@@ -2,11 +2,10 @@ namespace MediaServer.Workflow
 {
     using System;
     using System.Collections.Concurrent;
-    using System.Net;
+    using System.Collections.Generic;
 
     using Common.Collections;
     using Common.Serialization.Json;
-    using Common.System;
 
     using MediaServer.Contracts;
 
@@ -15,32 +14,26 @@ namespace MediaServer.Workflow
     using Telegram.Bot.Types;
 
     // TODO use log library
-    public class TelegramListener : IDisposable
+    public class TelegramListener : IDisposable, ITelegramListener
     {
         private readonly ITelegramBotClient botClient;
 
-        private readonly Configuration configuration;
+        private readonly ITelegramFactory telegramFactory;
 
         private readonly ConcurrentHashSet<long> allowedChats;
 
         // TODO make cache expiration
-        private readonly ConcurrentDictionary<long, TelegramChatListener> chatByListener =
-            new ConcurrentDictionary<long, TelegramChatListener>();
+        private readonly ConcurrentDictionary<long, ITelegramChatListener> chatByListener =
+            new ConcurrentDictionary<long, ITelegramChatListener>();
 
-        public TelegramListener(Configuration configuration)
+        public TelegramListener(
+            ITelegramFactory telegramFactory,
+            ITelegramBotClient botClient,
+            IEnumerable<long> allowedChatIds)
         {
-            this.configuration = configuration;
-            this.allowedChats = this.configuration.TelegramBot.AllowedChats.ToConcurrentHashSet();
-            
-            var proxy = configuration.Proxy;
-            var webProxy = new WebProxy(proxy.Host, proxy.Port)
-                {
-                    Credentials = new NetworkCredential(proxy.UserName, proxy.Password)
-                };
-            this.botClient = new TelegramBotClient(configuration.TelegramBot.Token, webProxy)
-                {
-                    Timeout = this.configuration.TelegramBot.Timeout ?? TimeSpan.FromMinutes(1)
-                };
+            this.telegramFactory = telegramFactory;
+            this.botClient = botClient;
+            this.allowedChats = allowedChatIds.ToConcurrentHashSet();
         }
         
         public void Dispose()
@@ -68,13 +61,10 @@ namespace MediaServer.Workflow
             this.botClient.StopReceiving();
         }
 
-        private TelegramChatListener GetOrAddChatListener(long chatId) =>
+        private ITelegramChatListener GetOrAddChatListener(long chatId) =>
             this.chatByListener.GetOrAdd(
                 chatId,
-                ci => new TelegramChatListener(
-                    this.configuration.Jackett,
-                    this.configuration.BitTorrent,
-                    this.configuration.ViewFilter.DeepCopy()));
+                ci => this.telegramFactory.CreateChatListener());
 
         private void OnCallbackQuery(object sender, CallbackQueryEventArgs e)
         {
@@ -86,9 +76,9 @@ namespace MediaServer.Workflow
             this.Handle(e.Message, (chatListener, log) => chatListener.Handle(e.Message, log));
         }
 
-        private void Handle(Message message, Action<TelegramChatListener, ClientAndServerLogger> action)
+        private void Handle(Message message, Action<ITelegramChatListener, ITelegramClientAndServerLogger> action)
         {
-            var log = new ClientAndServerLogger(this.botClient, message);
+            var log = this.telegramFactory.CreateClientAndServerLogger(message);
             if (!this.CheckChatIsAllowed(message, log))
                 return;
             
@@ -96,7 +86,7 @@ namespace MediaServer.Workflow
             action(chatListener, log);
         }
 
-        private bool CheckChatIsAllowed(Message message, ClientAndServerLogger log)
+        private bool CheckChatIsAllowed(Message message, ITelegramClientAndServerLogger log)
         {
             if (this.allowedChats.IsNullOrEmpty() || this.allowedChats.Contains(message.Chat.Id))
                 return true;

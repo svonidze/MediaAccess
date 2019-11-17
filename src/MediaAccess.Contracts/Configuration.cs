@@ -1,5 +1,7 @@
 namespace MediaServer.Contracts
 {
+    using BitTorrent.Contracts;
+
     using Jackett.Contracts;
 
     using JetBrains.Annotations;

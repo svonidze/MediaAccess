@@ -14,7 +14,6 @@ Jackett:
   Url: http://jackett.website.com:9117
   ApiKey: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 BitTorrent:
-  ForceUsingBlackHole: false
   BitTorrentType: Transmission
   Url: http://website.com:9091/transmission/rpc
   DownloadLocations:
