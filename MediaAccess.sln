@@ -44,7 +44,7 @@ ProjectSection(SolutionItems) = preProject
 	.dockerignore = .dockerignore
 	README.md = README.md
 	config.example.yaml = config.example.yaml
-	Dockerfile.debian-arm32 = Dockerfile.debian-arm32
+	Dockerfile.ubuntu-bionic-arm32v7 = Dockerfile.ubuntu-bionic-arm32v7
 EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BitTorrent.Contracts", "src\BitTorrent.Contracts\BitTorrent.Contracts.csproj", "{F39D0D7B-8445-4551-8B18-1B1D93792F24}"

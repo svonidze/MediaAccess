@@ -3,10 +3,10 @@ WORKDIR /app
 
 # copy, restore and publish app and libraries
 COPY . ./
-RUN dotnet publish -c Release -o out
+RUN dotnet publish -c Release -o out -r linux-arm
 
 # Build runtime image
-FROM mcr.microsoft.com/dotnet/core/runtime:3.0 AS runtime
+FROM mcr.microsoft.com/dotnet/core/runtime:3.0-bionic-arm32v7 AS runtime
 WORKDIR /app
 COPY --from=build /app/out ./
 ENTRYPOINT ["dotnet", "Telegram.BotServer.dll"]
