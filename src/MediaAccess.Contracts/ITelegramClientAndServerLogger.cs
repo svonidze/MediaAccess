@@ -1,6 +1,8 @@
 namespace MediaServer.Contracts
 {
+    using System;
     using System.Threading;
+    using System.Threading.Tasks;
 
     using Telegram.Bot.Types.Enums;
     using Telegram.Bot.Types.ReplyMarkups;
@@ -19,5 +21,7 @@ namespace MediaServer.Contracts
         void LogLastMessage();
 
         void Log(string text);
+
+        Task TrySendDocumentBackAsync(Uri @from);
     }
 }

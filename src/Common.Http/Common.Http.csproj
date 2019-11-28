@@ -5,10 +5,12 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="JetBrains.Annotations" Version="2019.1.3" />
       <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Common.Collections\Common.Collections.csproj" />
       <ProjectReference Include="..\Common.Exceptions\Common.Exceptions.csproj" />
       <ProjectReference Include="..\Common.Http.Contracts\Common.Http.Contracts.csproj" />
       <ProjectReference Include="..\Common.Serialization.Json\Common.Serialization.Json.csproj" />

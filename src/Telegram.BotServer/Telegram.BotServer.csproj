@@ -8,6 +8,11 @@
         <RootNamespace>Telegram.FirstBot</RootNamespace>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <TargetFrameworks>netcoreapp3.0</TargetFrameworks>
+        <RuntimeIdentifiers>linux-arm;ubuntu.19.10-x64</RuntimeIdentifiers>
+    </PropertyGroup>
+
     <ItemGroup>
       <PackageReference Include="Castle.Windsor" Version="5.0.1" />
       <PackageReference Include="Telegram.Bot" Version="15.0.0" />

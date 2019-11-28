@@ -1,13 +1,19 @@
 namespace MediaServer.Workflow
 {
     using System;
+    using System.Net;
     using System.Threading;
+    using System.Threading.Tasks;
+
+    using Common.Exceptions;
+    using Common.Http;
 
     using MediaServer.Contracts;
 
     using Telegram.Bot;
     using Telegram.Bot.Types;
     using Telegram.Bot.Types.Enums;
+    using Telegram.Bot.Types.InputFiles;
     using Telegram.Bot.Types.ReplyMarkups;
 
     public class TelegramClientAndServerLogger : ITelegramClientAndServerLogger
@@ -59,6 +65,33 @@ namespace MediaServer.Workflow
         public void Log(string text)
         {
             Console.WriteLine($"{this.message.Chat.Id}\t{text}");
+        }
+        
+        public async Task TrySendDocumentBackAsync(Uri @from)
+        {
+            Console.WriteLine(@from);
+
+            var webClient = new WebClient();
+            
+            string ExtractFromContentDisposition(string key) => 
+                ContentDisposition.Parse(webClient.ResponseHeaders["content-disposition"])?[key];
+
+            try
+            {
+                await using var stream = await webClient.OpenReadTaskAsync(@from);
+                await this.botClient.SendDocumentAsync(
+                        this.message.Chat,
+                        new InputOnlineFile(stream, ExtractFromContentDisposition("filename")))
+                    .ContinueWith(task => this.Log($"{nameof(this.TrySendDocumentBackAsync)} is {task.Status}. " 
+                        + $"{nameof(task.Result.Document.FileName)}={task.Result.Document.FileName}"));
+            }
+            catch (Exception e)
+            {
+                var customMessage = $"{nameof(this.TrySendDocumentBackAsync)} is Failed";
+                
+                this.Text(e.GetShortDescription(customMessage));
+                this.Log(e.GetFullDescription(customMessage));
+            }
         }
     }
 }

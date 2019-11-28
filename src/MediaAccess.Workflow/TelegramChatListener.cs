@@ -51,7 +51,7 @@ namespace MediaServer.Workflow
             [NotNull] IJackettIntegration jackett,
             [NotNull] IBitTorrentClient bitTorrentClient)
         {
-            this.viewFilterConfig = viewFilterConfig;
+            this.viewFilterConfig = viewFilterConfig.DeepCopy();
             this.jackett = jackett;
             this.bitTorrentClient = bitTorrentClient;
         }
@@ -60,37 +60,23 @@ namespace MediaServer.Workflow
         {
             var actions = new Dictionary<Regex, Action<Match>>
                 {
-                    { BotCommands.PickLocationForTorrent.Regex, PickLocationForTorrent },
+                    { BotCommands.PickTorrent.Regex, PickTorrent },
                     { BotCommands.StartTorrent.Regex, StartTorrent },
                     { BotCommands.GoToPage.Regex, GoToPage },
-                    { BotCommands.SortResults.Regex, SortResults }
+                    { BotCommands.SortResults.Regex, SortResults },
+                    { BotCommands.DownloadTorrentFile.Regex, DownloadTorrentFile },
                 };
-            
-            void PickLocationForTorrent(Match match)
+         
+            bool TryFindTorrentInLocalResults(Match match, out string hashedUri, out TrackerCacheResult torrentCandidate)
             {
-                if (!this.bitTorrentClient.IsSetUp)
-                {
-                    log.ReplyBack(
-                        $"{nameof(this.bitTorrentClient)} is not set up. The command {nameof(BotCommands.PickLocationForTorrent)} cannot be executed.");
-                    log.LogLastMessage();
-                    return;
-                }
-
-                var downloadLocations = this.bitTorrentClient.ListDownloadLocations();
-                if (downloadLocations == null || !downloadLocations.Any())
-                {
-                    log.ReplyBack(
-                        $"No {nameof(downloadLocations)} are set up. The command {nameof(BotCommands.PickLocationForTorrent)} cannot be executed.");
-                    log.LogLastMessage();
-                    return;
-                }
-
-                var hashedUri = match.Groups[BotCommands.PickLocationForTorrent.Groups.HashUrl].Value;
+                torrentCandidate = default;
+                
+                hashedUri = match.Groups[BotCommands.PickTorrent.Groups.HashUrl].Value;
                 if (!this.hashToUrl.TryGetValue(hashedUri, out var uri))
                 {
                     log.Text($"Search results are expired, repeat your search");
                     log.Log($"Uri not found by hash '{hashedUri}'");
-                    return;
+                    return false;
                 }
 
                 var torrentCandidates = this.torrents.Results.Where(t => t.Guid == uri).ToArray();
@@ -100,7 +86,7 @@ namespace MediaServer.Workflow
                     log.Log(
                         $"Torrent could not be found with URL={uri.AbsoluteUri}, "
                         + $"last search has {this.torrents?.Results?.Count} results");
-                    return;
+                    return false;
                 }
 
                 if (torrentCandidates.Length > 1)
@@ -111,16 +97,45 @@ namespace MediaServer.Workflow
                     log.Log(
                         $"Found {torrentCandidates.Length} torrents with URL={uri.AbsoluteUri}, "
                         + $"last search has {this.torrents?.Results?.Count} results");
-                    return;
+                    return false;
                 }
 
-                this.torrent = torrentCandidates.Single();
+                torrentCandidate = torrentCandidates.Single();
+                return true;
+            }
+            
+            void DownloadTorrentFile(Match match)
+            {
+                if (!TryFindTorrentInLocalResults(match, out var hashedUri, out this.torrent))
+                    return;
+                
+                log.TrySendDocumentBackAsync(this.torrent.Link);
+            }
+            
+            void PickTorrent(Match match)
+            {
+                if (!TryFindTorrentInLocalResults(match, out var hashedUri, out this.torrent))
+                    return;
+
+                var downloadLocations = (this.bitTorrentClient.IsSetUp
+                    ? this.bitTorrentClient.ListDownloadLocations()
+                    : default) ?? new string[0];
 
                 log.ReplyBack(
-                    $"Pick download location for torrent #{this.GetResultIndex(this.torrent)}",
+                    $"¿What to do with torrent #{this.GetResultIndex(this.torrent)} '{this.torrent.Title}'?",
                     new InlineKeyboardMarkup(
-                        downloadLocations.Select(
-                            dl => InlineKeyboardButton.WithCallbackData(dl, string.Format(BotCommands.StartTorrent.Format, dl)))));
+                        new[]
+                            {
+                                downloadLocations.Select(
+                                    dl => InlineKeyboardButton.WithCallbackData(
+                                        dl,
+                                        string.Format(BotCommands.StartTorrent.Format, dl))),
+                                new[]
+                                    {
+                                        InlineKeyboardButton.WithUrl($"Open {this.torrent.Tracker}", this.torrent.Guid.AbsoluteUri),
+                                        InlineKeyboardButton.WithCallbackData("Download locally", string.Format(BotCommands.DownloadTorrentFile.Format, hashedUri)),
+                                    }
+                            }));
             }
 
             void StartTorrent(Match match)
@@ -398,7 +413,7 @@ namespace MediaServer.Workflow
                                     this.hashToUrl.TryAdd(hashedUrl, uri);
                                     return InlineKeyboardButton.WithCallbackData(
                                         this.GetResultIndex(r).ToString(),
-                                        string.Format(BotCommands.PickLocationForTorrent.Format, hashedUrl));
+                                        string.Format(BotCommands.PickTorrent.Format, hashedUrl));
                                 }),
                         new[]
                             {

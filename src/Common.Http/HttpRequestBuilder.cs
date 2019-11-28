@@ -37,7 +37,6 @@ namespace Common.Http
             };
         }
 
-
         public HttpRequestBuilder SetUrl(string url, NameValueCollection queryValues = null)
         {
             var builder = new UriBuilder(url);
