@@ -7,6 +7,7 @@ namespace MediaServer.Workflow
 
     using Common.Exceptions;
     using Common.Http;
+    using Common.Serialization.Json;
 
     using MediaServer.Contracts;
 
@@ -20,13 +21,16 @@ namespace MediaServer.Workflow
     {
         private readonly ITelegramBotClient botClient;
 
+        private readonly IServerLogger serverLogger;
+
         private readonly Message message;
 
         private string lastText;
 
-        public TelegramClientAndServerLogger(ITelegramBotClient botClient, Message message)
+        public TelegramClientAndServerLogger(ITelegramBotClient botClient, IServerLogger serverLogger, Message message)
         {
             this.botClient = botClient;
+            this.serverLogger = serverLogger;
             this.message = message;
         }
 
@@ -62,14 +66,23 @@ namespace MediaServer.Workflow
             this.Log(this.lastText);
         }
 
-        public void Log(string text)
+        public void Log(params object[] texts)
         {
-            Console.WriteLine($"{this.message.Chat.Id}\t{text}");
+            var chatId = this.message.Chat.Id;
+            var userId = this.message.From.Id;
+            var ids = new
+                {
+                    ChatId = chatId,
+                    UserId = userId == chatId ? (long?)null : userId,
+                    UserName = this.message.From.Username
+                };
+            
+            this.serverLogger.Log(ids.ToJson(), texts);
         }
         
         public async Task TrySendDocumentBackAsync(Uri @from)
         {
-            Console.WriteLine(@from);
+            this.Log($"Started {nameof(this.TrySendDocumentBackAsync)} for {@from.LocalPath}");
 
             var webClient = new WebClient();
             
@@ -82,7 +95,8 @@ namespace MediaServer.Workflow
                 await this.botClient.SendDocumentAsync(
                         this.message.Chat,
                         new InputOnlineFile(stream, ExtractFromContentDisposition("filename")))
-                    .ContinueWith(task => this.Log($"{nameof(this.TrySendDocumentBackAsync)} is {task.Status}. " 
+                    .ContinueWith(task => this.Log(
+                        $"{nameof(this.TrySendDocumentBackAsync)} is {task.Status}. " 
                         + $"{nameof(task.Result.Document.FileName)}={task.Result.Document.FileName}"));
             }
             catch (Exception e)

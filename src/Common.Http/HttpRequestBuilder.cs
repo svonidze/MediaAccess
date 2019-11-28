@@ -40,23 +40,11 @@ namespace Common.Http
         public HttpRequestBuilder SetUrl(string url, NameValueCollection queryValues = null)
         {
             var builder = new UriBuilder(url);
+            
             var query = HttpUtility.ParseQueryString(builder.Query);
             if (queryValues != null)
-            {
-//                foreach (var key in queryValues.AllKeys)
-//                {
-//                    var value = queryValues[key];
-//                    var bytes = encoding.GetBytes(value);
-//                    var encodedBytes = WebUtility.UrlEncodeToBytes(bytes, 0, bytes.Length);
-//                    var encodedString = encoding.GetString(encodedBytes,0, encodedBytes.Length);
-//                    Console.WriteLine(encodedString);
-////                    query.Add(key, encodedString);
-////                    query.Add(key, Uri.EscapeDataString(queryValues[key]));
-//                }
                 query.Add(queryValues);
-            }
 
-            Console.WriteLine(query.ToString());
             builder.Query = query.ToString();
 
             this.Uri = builder.ToString();

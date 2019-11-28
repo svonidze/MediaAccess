@@ -19,57 +19,73 @@ namespace Telegram.FirstBot
 
     using Telegram.Bot;
 
-    public class WindsorInstaller : IWindsorInstaller
+    public static class WindsorInstaller
     {
-        private readonly Configuration configuration;
+        public static IWindsorInstaller Register(Configuration configuration = default) =>
+            configuration == default
+                ? (IWindsorInstaller)new WithNoConfiguration()
+                : new WithConfiguration(configuration);
 
-        public WindsorInstaller(Configuration configuration)
+        private class WithConfiguration : IWindsorInstaller
         {
-            this.configuration = configuration;
+            private readonly Configuration configuration;
+
+            public WithConfiguration(Configuration configuration)
+            {
+                this.configuration = configuration;
+            }
+
+            public void Install(IWindsorContainer container, IConfigurationStore store)
+            {
+                container.Register(
+                    Component.For<ITelegramBotClient>().UsingFactoryMethod(
+                        () =>
+                            {
+                                var proxy = this.configuration.Proxy;
+                                var webProxy = new WebProxy(proxy.Host, proxy.Port)
+                                    {
+                                        Credentials = new NetworkCredential(proxy.UserName, proxy.Password)
+                                    };
+                                return new TelegramBotClient(this.configuration.TelegramBot.Token, webProxy)
+                                    {
+                                        Timeout = this.configuration.TelegramBot.Timeout ?? TimeSpan.FromMinutes(1)
+                                    };
+                            }).LifestyleSingleton());
+
+                container.Register(
+                    Component.For<ITelegramListener>().ImplementedBy<TelegramListener>().DependsOn(
+                            Dependency.OnValue<IEnumerable<long>>(this.configuration.TelegramBot.AllowedChats))
+                        .LifestyleTransient(),
+                    Component.For<ITelegramChatListener>().ImplementedBy<TelegramChatListener>()
+                        .DependsOn(Dependency.OnValue<ViewFilterConfiguration>(this.configuration.ViewFilter))
+                        .LifestyleTransient(),
+                    Component.For<IJackettIntegration>().ImplementedBy<JackettIntegration>()
+                        .DependsOn(Dependency.OnValue<IJackettAccessConfiguration>(this.configuration.Jackett))
+                        .LifestyleTransient());
+
+                if (this.configuration.BitTorrent == null)
+                    container.Register(
+                        Component.For<IBitTorrentClient>().ImplementedBy<NotSetUpBitTorrentClient>()
+                            .LifestyleSingleton());
+                else
+                    container.Register(
+                        Component.For<IBitTorrentClient>().ImplementedBy<TransmissionClient>().DependsOn(
+                                Dependency.OnValue<BitTorrentClientConfiguration>(this.configuration.BitTorrent))
+                            .LifestyleTransient());
+            }
         }
 
-        public void Install(IWindsorContainer container, IConfigurationStore store)
+        private class WithNoConfiguration : IWindsorInstaller
         {
-            container.Register(
-                Component.For<ITelegramFactory>().AsFactory());
-            
-            container.Register(
-                Component.For<ITelegramBotClient>().UsingFactoryMethod(
-                    () =>
-                        {
-                            var proxy = this.configuration.Proxy;
-                            var webProxy = new WebProxy(proxy.Host, proxy.Port)
-                                {
-                                    Credentials = new NetworkCredential(proxy.UserName, proxy.Password)
-                                };
-                            return new TelegramBotClient(this.configuration.TelegramBot.Token, webProxy)
-                                {
-                                    Timeout = this.configuration.TelegramBot.Timeout ?? TimeSpan.FromMinutes(1)
-                                };
+            public void Install(IWindsorContainer container, IConfigurationStore store)
+            {
+                container.Register(Component.For<ITelegramFactory>().AsFactory());
 
-                        }).LifestyleSingleton());
-            
-            container.Register(
-                Component.For<ITelegramListener>().ImplementedBy<TelegramListener>()
-                    .DependsOn(Dependency.OnValue<IEnumerable<long>>(this.configuration.TelegramBot.AllowedChats))
-                    .LifestyleTransient(),
-                Component.For<ITelegramClientAndServerLogger>().ImplementedBy<TelegramClientAndServerLogger>()
-                    .LifestyleTransient(),
-                Component.For<ITelegramChatListener>().ImplementedBy<TelegramChatListener>()
-                    .DependsOn(Dependency.OnValue<ViewFilterConfiguration>(this.configuration.ViewFilter))
-                    .LifestyleTransient(),
-                Component.For<IJackettIntegration>().ImplementedBy<JackettIntegration>()
-                    .DependsOn(Dependency.OnValue<IJackettAccessConfiguration>(this.configuration.Jackett))
-                    .LifestyleTransient());
-
-            if (this.configuration.BitTorrent == null)
                 container.Register(
-                    Component.For<IBitTorrentClient>().ImplementedBy<NotSetUpBitTorrentClient>().LifestyleSingleton());
-            else
-                container.Register(
-                    Component.For<IBitTorrentClient>().ImplementedBy<TransmissionClient>()
-                        .DependsOn(Dependency.OnValue<BitTorrentClientConfiguration>(this.configuration.BitTorrent))
-                        .LifestyleTransient());
+                    Component.For<ITelegramClientAndServerLogger>().ImplementedBy<TelegramClientAndServerLogger>()
+                        .LifestyleTransient(),
+                    Component.For<IServerLogger>().ImplementedBy<ServerLogger>().LifestyleTransient());
+            }
         }
     }
 }

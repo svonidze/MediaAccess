@@ -31,7 +31,6 @@ namespace MediaServer.Workflow
                         { "Query", searchRequest },
                         { "_", DateTime.UtcNow.ToUnixTimestamp().ToString() }
                     });
-            Console.WriteLine(httpBuilder.Uri);
             return httpBuilder.RequestAndValidate<ManualSearchResult>(HttpMethod.Get);
         }
     }

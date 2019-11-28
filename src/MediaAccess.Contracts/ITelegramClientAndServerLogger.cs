@@ -7,7 +7,7 @@ namespace MediaServer.Contracts
     using Telegram.Bot.Types.Enums;
     using Telegram.Bot.Types.ReplyMarkups;
 
-    public interface ITelegramClientAndServerLogger
+    public interface ITelegramClientAndServerLogger : IServerLogger
     {
         void Text(string text);
 
@@ -19,8 +19,6 @@ namespace MediaServer.Contracts
         void ReplyBack(string text, IReplyMarkup replyMarkup = default);
 
         void LogLastMessage();
-
-        void Log(string text);
 
         Task TrySendDocumentBackAsync(Uri @from);
     }

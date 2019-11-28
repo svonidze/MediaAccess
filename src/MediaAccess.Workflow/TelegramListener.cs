@@ -20,6 +20,8 @@ namespace MediaServer.Workflow
 
         private readonly ITelegramFactory telegramFactory;
 
+        private readonly IServerLogger serverLogger;
+
         private readonly ConcurrentHashSet<long> allowedChats;
 
         // TODO make cache expiration
@@ -28,10 +30,12 @@ namespace MediaServer.Workflow
 
         public TelegramListener(
             ITelegramFactory telegramFactory,
+            IServerLogger serverLogger,
             ITelegramBotClient botClient,
             IEnumerable<long> allowedChatIds)
         {
             this.telegramFactory = telegramFactory;
+            this.serverLogger = serverLogger;
             this.botClient = botClient;
             this.allowedChats = allowedChatIds.ToConcurrentHashSet();
         }
@@ -49,12 +53,12 @@ namespace MediaServer.Workflow
             this.botClient.OnCallbackQuery += this.OnCallbackQuery;
             this.botClient.StartReceiving();
 
-            Console.WriteLine($"{nameof(this.StartReceiving)} is run for bot {me.Result.ToJson()}");
+            this.serverLogger.Log($"{nameof(this.StartReceiving)} is run for bot {me.Result.ToJson()}");
         }
 
         public void StopReceiving()
         {
-            Console.WriteLine($"{nameof(this.StopReceiving)}");
+            this.serverLogger.Log(nameof(this.StopReceiving));
             
             this.botClient.OnMessage -= this.OnMessage;
             this.botClient.OnCallbackQuery -= this.OnCallbackQuery;
@@ -92,7 +96,7 @@ namespace MediaServer.Workflow
                 return true;
             
             log.ReplyBack("You are not allowed to use this Bot instance. Run your own!");
-            log.Log($"{message.Chat.Username} in chat {message.Chat.Id} tried to access the Bot. Chat is not allowed.");
+            log.Log($"Bot is not allowed for the user.");
             return false;
         }
     }

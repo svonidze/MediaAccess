@@ -84,7 +84,7 @@ namespace MediaServer.Workflow
                 {
                     log.Text("Found no torrents, probably Search results are expired, repeat your search");
                     log.Log(
-                        $"Torrent could not be found with URL={uri.AbsoluteUri}, "
+                        $"Torrent could not be found with URL={uri.LocalPath}, "
                         + $"last search has {this.torrents?.Results?.Count} results");
                     return false;
                 }
@@ -295,7 +295,7 @@ namespace MediaServer.Workflow
             else
             {
                 log.ReplyBack($"No idea what to do with your request");
-                log.Log($"Received a text message in chat {message.Chat.Id}: '{messageText}'");
+                log.Log($"said '{messageText}'");
             }
         }
         
@@ -319,7 +319,9 @@ namespace MediaServer.Workflow
                 this.torrents = null;
                 this.torrents = this.jackett.SearchTorrents(searchRequest);
 
-                log.Log($"Done {action}");
+                log.Log($"Done {action}: " 
+                    + $"Found {this.torrents?.Results?.Count} results from "
+                    + $"{this.torrents?.Indexers?.Count(i => i.Results > 0)} indexers.");
             }
             catch (Exception exception)
             {
