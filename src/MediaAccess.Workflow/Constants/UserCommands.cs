@@ -15,6 +15,10 @@ namespace MediaServer.Workflow.Constants
                 public const string Delimiter = "searchRequest";
             }
 
+            public static readonly string[] Commands = {
+                    "/torrent", "/t"
+                };
+            
             public static readonly Regex Regex = new Regex(
                 @"/(torrent|t)(?<botName>@\w+)?(?<delimiter>\s+)?(?<searchRequest>.+)?");
         }
@@ -46,7 +50,9 @@ namespace MediaServer.Workflow.Constants
 
         public static class StartBotCommunication
         {
-            public static readonly Regex Regex = new Regex(@"/start");
+            public const string Command = @"/start";
+
+            public static readonly Regex Regex = new Regex(Command);
         }
     }
 }

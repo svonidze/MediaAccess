@@ -25,6 +25,7 @@
       <ProjectReference Include="..\Common.DateTime\Common.DateTime.csproj" />
       <ProjectReference Include="..\Common.Exceptions\Common.Exceptions.csproj" />
       <ProjectReference Include="..\Common.Http\Common.Http.csproj" />
+      <ProjectReference Include="..\Common.Net\Common.Net.csproj" />
       <ProjectReference Include="..\Common.Serialization.Yaml\Common.Serialization.Yaml.csproj" />
       <ProjectReference Include="..\Common.Text\Common.Text.csproj" />
       <ProjectReference Include="..\Jackett.Contracts\Jackett.Contracts.csproj" />

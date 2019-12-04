@@ -166,8 +166,9 @@ namespace MediaServer.Workflow
                                 DownloadDirectory = location
                             });
 
-                    log.ReplyBack($"Torrent '{newTorrent.Name}' was added");
-                    log.Log($"Torrent '{newTorrent.Name}' was added {newTorrent.ToJson()}");
+                    string GetMessage(string torrentInfo) => $"Torrent '{torrentInfo}' will be downloaded to {location}.";
+                    log.ReplyBack(GetMessage(newTorrent.Name));
+                    log.Log(GetMessage(newTorrent.ToJson()));
                 }
                 catch (Exception exception)
                 {
@@ -247,7 +248,11 @@ namespace MediaServer.Workflow
             void StartBotCommunication(Match match)
             {
                 log.Text(
-                    "Greeting! Here you can search for torrents and send them to a favorite BitTorrent client. Lets start with typing /t or /torrent.");
+                    "Greeting! " + NewLine 
+                    + "Here you can search torrents, download and send them to your favorite BitTorrent client " 
+                    + "(requires to set up your private BitTorrent client and Telegram bot). " + NewLine 
+                    + $"Lets start with typing {UserCommands.Torrent.Commands.JoinToString(" or ")}." + NewLine
+                    + "For more details see https://github.com/svonidze/MediaAccess");
                 log.Log(match.Value);
             }
 
@@ -294,7 +299,7 @@ namespace MediaServer.Workflow
             }
             else
             {
-                log.ReplyBack($"No idea what to do with your request");
+                log.ReplyBack($"No idea what to do with your request. Type {UserCommands.StartBotCommunication.Command} for intro.");
                 log.Log($"said '{messageText}'");
             }
         }
@@ -321,7 +326,7 @@ namespace MediaServer.Workflow
 
                 log.Log($"Done {action}: " 
                     + $"Found {this.torrents?.Results?.Count} results from "
-                    + $"{this.torrents?.Indexers?.Count(i => i.Results > 0)} indexers.");
+                    + $"{this.torrents?.Indexers?.Count(i => i.Results > 0)}/{this.torrents?.Indexers?.Count} indexers.");
             }
             catch (Exception exception)
             {
@@ -442,7 +447,7 @@ namespace MediaServer.Workflow
                 $"Page {pageNumber}/{lasPageNumber}" 
                 + NewLine
                 + $"Found {this.torrents.Results.Count} results from "
-                + $"{orderedIndexes.Count(i => i.Results > 0)} indexers: "
+                + $"{orderedIndexes.Count(i => i.Results > 0)}/{orderedIndexes.Length} indexers: "
                 + orderedIndexes.Select(i => $"{i.Name} ({i.Results})").JoinToString(", ") 
                 + NewLine + NewLine
                 + resultsToShow.Select(

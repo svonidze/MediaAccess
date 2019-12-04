@@ -8,6 +8,8 @@
     using Castle.Facilities.TypedFactory;
     using Castle.Windsor;
 
+    using Common.Exceptions;
+    using Common.Net;
     using Common.Serialization.Yaml;
 
     using MediaServer.Contracts;
@@ -15,7 +17,8 @@
     internal class Program
     {
         private const string ConfigFilePath = "/config/config.yaml";
-        
+        private static readonly TimeSpan AttemptDelay = TimeSpan.FromSeconds(30);
+
         // TODO utilize library to parse CLI args 
         static void Main(string[] args)
         {
@@ -48,7 +51,7 @@
             container.Install(WindsorInstaller.Register(configuration));
 
             var telegramListener = container.Resolve<ITelegramListener>();
-            telegramListener.StartReceiving();
+            RepeatIfFailed(telegramListener.StartReceiving, serverLogger);
             Thread.Sleep(int.MaxValue);
         }
 
@@ -63,6 +66,24 @@
             container.AddFacility<TypedFactoryFacility>();
             
             return container;
+        }
+        
+        private static void RepeatIfFailed(Action action, IServerLogger serverLogger, int attempt = 0)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception e)
+            {
+                var delay = AttemptDelay * Math.Pow(2, attempt); 
+                
+                serverLogger.Log($"Internet is{(Internet.IsAvailable() ? null : " NOT")} available");
+                serverLogger.Log(e.GetFullDescription($"Attempt #{attempt} failed, next try in {delay}"));
+
+                Thread.Sleep(delay);
+                RepeatIfFailed(action, serverLogger, attempt + 1);
+            }
         }
     }
 }
