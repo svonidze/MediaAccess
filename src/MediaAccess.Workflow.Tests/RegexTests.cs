@@ -36,8 +36,9 @@ namespace MediaAccess.Workflow.Tests
             return match.Groups[UserCommands.Torrent.Groups.SearchRequest].Value;
         }
 
-        [TestCase(@"Фильм ""Во все тяжкие"" (""Breaking Bad"", 2008-2013)", ExpectedResult = "Во все тяжкие Breaking Bad 2008-2013")]
+        [TestCase(@"Фильм ""Во все тяжкие"" (""Breaking Bad"", 2008-2013)", ExpectedResult = "Во все тяжкие Breaking Bad 2008 2013")]
         [TestCase(@"Фильм ""Зеленый слоник"" (1999)", ExpectedResult = "Зеленый слоник 1999")]
+        [TestCase(@"Фильм ""Королевство"" (""Kingdom"", 2019-...) #kinopoisk", ExpectedResult = "Королевство Kingdom 2019 ...")]
         public string Kinoposik(string text)
         {
             if (!UserCommands.Kinopoisk.Regex.TryMath(text, out var match))
@@ -51,7 +52,8 @@ namespace MediaAccess.Workflow.Tests
                 {
                     GetValue(UserCommands.Kinopoisk.Groups.RusName),
                     GetValue(UserCommands.Kinopoisk.Groups.EngName),
-                    GetValue(UserCommands.Kinopoisk.Groups.Years)
+                    GetValue(UserCommands.Kinopoisk.Groups.StartYear),
+                    GetValue(UserCommands.Kinopoisk.Groups.EndYear)
                 }.Where(v=>!v.IsNullOrEmpty()).JoinToString(' ');
         }
         

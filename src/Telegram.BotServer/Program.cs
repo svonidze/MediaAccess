@@ -60,12 +60,9 @@
             serverLogger.Log(e.ExceptionObject.ToString());
         }
 
-        private static WindsorContainer InitializeContainer()
+        private static IWindsorContainer InitializeContainer()
         {
-            var container = new WindsorContainer();
-            container.AddFacility<TypedFactoryFacility>();
-            
-            return container;
+            return new WindsorContainer().AddFacility<TypedFactoryFacility>();
         }
         
         private static void RepeatIfFailed(Action action, IServerLogger serverLogger, int attempt = 0)

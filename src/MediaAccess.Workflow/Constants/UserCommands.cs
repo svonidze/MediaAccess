@@ -31,11 +31,13 @@ namespace MediaServer.Workflow.Constants
 
                 public const string EngName = "engName";
 
-                public const string Years = "years";
+                public const string StartYear = "startYear";
+                
+                public const string EndYear = "endYear";
             }
 
             public static readonly Regex Regex = new Regex(
-                @"Фильм ""(?<rusName>.+)""\s?\((""(?<engName>.+)"")?,?\s?(?<years>\d+-?\d*)\)");
+                @"Фильм ""(?<rusName>.+)""\s?\((""(?<engName>.+)"")?,?\s?(?<startYear>\d{4})-?(?<endYear>(\d{4}|\.{3}))?\)");
         }
 
         public static class Film

@@ -7,14 +7,14 @@ namespace MediaServer.Workflow
 
     using MediaServer.Contracts;
 
-    public class ServerLogger : IServerLogger
+    public class ServerConsoleLogger : IServerLogger
     {
         public void Log(params object[] texts)
         {
             LogAll(DateTime.UtcNow.ToString("s"), texts);
         }
 
-        private static void LogAll(params object[] texts)
+        protected static void LogAll(params object[] texts)
         {
             object[] Extract(object obj)
             {

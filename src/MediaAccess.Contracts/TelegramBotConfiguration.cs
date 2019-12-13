@@ -6,7 +6,7 @@ namespace MediaServer.Contracts
     {
         public string Token { get; set; }
 
-        public long[]? AllowedChats { get; set; }
+        public long[] AllowedChats { get; set; }
 
         public TimeSpan? Timeout { get; set; }
     }

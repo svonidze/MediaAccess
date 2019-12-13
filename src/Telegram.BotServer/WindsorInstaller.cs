@@ -84,7 +84,7 @@ namespace Telegram.FirstBot
                 container.Register(
                     Component.For<ITelegramClientAndServerLogger>().ImplementedBy<TelegramClientAndServerLogger>()
                         .LifestyleTransient(),
-                    Component.For<IServerLogger>().ImplementedBy<ServerLogger>().LifestyleTransient());
+                    Component.For<IServerLogger>().ImplementedBy<ServerConsoleLogger>().LifestyleTransient());
             }
         }
     }

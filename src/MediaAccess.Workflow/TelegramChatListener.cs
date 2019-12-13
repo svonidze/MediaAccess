@@ -38,7 +38,7 @@ namespace MediaServer.Workflow
 
         private readonly ViewFilterConfiguration viewFilterConfig;
 
-        private readonly ConcurrentDictionary<string, Uri> hashToUrl = new ConcurrentDictionary<string, Uri>();
+        private readonly IDictionary<string, Uri> hashToUrl;
 
         private ManualSearchResult torrents;
 
@@ -54,6 +54,8 @@ namespace MediaServer.Workflow
             this.viewFilterConfig = viewFilterConfig.DeepCopy();
             this.jackett = jackett;
             this.bitTorrentClient = bitTorrentClient;
+            
+            this.hashToUrl = new ConcurrentDictionary<string, Uri>();
         }
 
         public void Handle(string queryData, ITelegramClientAndServerLogger log)
@@ -407,6 +409,7 @@ namespace MediaServer.Workflow
                     : Emojies.DownwardsBlackArrow;
 
             var resultsToShow = FilterAndSortResults();
+            
             var inlineKeyboardMarkup = new InlineKeyboardMarkup(
                 new[]
                     {
@@ -419,7 +422,7 @@ namespace MediaServer.Workflow
                                     var hashedUrl = EncryptHelper.GetMD5(uri.AbsoluteUri);
                                     this.hashToUrl.TryAdd(hashedUrl, uri);
                                     return InlineKeyboardButton.WithCallbackData(
-                                        this.GetResultIndex(r).ToString(),
+                                        GetReadableSize(r.Size),
                                         string.Format(BotCommands.PickTorrent.Format, hashedUrl));
                                 }),
                         new[]

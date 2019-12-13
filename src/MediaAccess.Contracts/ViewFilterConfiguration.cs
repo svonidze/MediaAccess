@@ -8,8 +8,8 @@ namespace MediaServer.Contracts
 
         public bool Ascending { get; set; }
 
-        public string? MaxSize { get; set; }
+        public string MaxSize { get; set; }
 
-        public string? MinSize { get; set; }
+        public string MinSize { get; set; }
     }
 }
