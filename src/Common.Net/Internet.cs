@@ -4,7 +4,9 @@
 
     public static class Internet
     {
-        public static bool IsAvailable(string url = "http://google.com/generate_204")
+        public const string DefaultSite = "http://google.com/generate_204";
+        
+        public static bool IsAvailable(string url = DefaultSite)
         {
             try
             {

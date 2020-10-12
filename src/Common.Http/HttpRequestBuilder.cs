@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
-using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -16,47 +15,67 @@ using Newtonsoft.Json;
 
 namespace Common.Http
 {
+    using JetBrains.Annotations;
+
     public class HttpRequestBuilder
     {
+        private UriBuilder uriBuilder;
+        
         private readonly HttpClient httpClient;
 
-        public string Uri { get; private set; }
+        [CanBeNull]
+        public Uri Uri => this.uriBuilder?.Uri;
 
         private HttpContent httpContent;
 
-        public HttpRequestBuilder(TimeSpan? timeout = null)
+        public HttpRequestBuilder(TimeSpan? timeout = null, bool enableLogging = false)
         {
-            //new LoggingHandler(
-            // new HttpClientHandler
-            // {
-            //     UseCookies = false
-            // })
-            this.httpClient = new HttpClient
-            {
-                Timeout = timeout ?? TimeSpan.FromMinutes(2)
-            };
+            HttpMessageHandler CreateMessageLogger() =>
+                new LoggingHandler(
+                    new HttpClientHandler
+                        {
+                            UseCookies = false
+                        });
+
+            this.httpClient = enableLogging
+                ? new HttpClient(CreateMessageLogger())
+                : new HttpClient();
+            this.httpClient.Timeout = timeout ?? TimeSpan.FromMinutes(2);
         }
 
         public HttpRequestBuilder SetUrl(string url, NameValueCollection queryValues = null)
         {
-            var builder = new UriBuilder(url);
-            
-            var query = HttpUtility.ParseQueryString(builder.Query);
+            this.uriBuilder = new UriBuilder(url);
+
             if (queryValues != null)
-                query.Add(queryValues);
+                this.AddUrlQueryValues(queryValues);
 
-            builder.Query = query.ToString();
+            return this;
+        }
+        
+        public HttpRequestBuilder AddUrlQueryValues(NameValueCollection queryValues)
+        {
+            if (this.uriBuilder == null || queryValues == null)
+                throw new NotSupportedException();
 
-            this.Uri = builder.ToString();
+            var query = HttpUtility.ParseQueryString(this.uriBuilder.Query);
+            query.Add(queryValues);
+
+            this.uriBuilder.Query = query.ToString();
+
             return this;
         }
 
+        public HttpRequestBuilder SetAuthorization(string token)
+        {
+            this.httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            return this;
+        }
+        
         public HttpRequestBuilder SetCookie(NameValueCollection cookieValues)
         {
             if (cookieValues == null)
-            {
                 return this;
-            }
 
             var cookies = HttpUtility.ParseQueryString(string.Empty);
             cookies.Add(cookieValues);
@@ -109,24 +128,19 @@ namespace Common.Http
             return this;
         }
 
-        public HttpRequestBuilder SetJsonPayload(string jsonPayload)
+        public HttpRequestBuilder SetJsonPayload<T>(T payload) => this.SetPayload(payload.ToJson());
+
+        public HttpRequestBuilder SetPayload(string jsonPayload, string mediaType = "application/json")
         {
-            this.httpContent = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+            this.httpContent = new StringContent(jsonPayload, Encoding.UTF8, mediaType);
             return this;
         }
 
-        public T RequestAndValidate<T>(HttpMethod httpMethod) where T : IResponse, new()
-        {
-            string content;
-            var response = this.RequestAndValidate<T>(httpMethod, out content);
-
-            return response;
-        }
+        public T RequestAndValidate<T>(HttpMethod httpMethod) where T : IResponse, new() => this.RequestAndValidate<T>(httpMethod, out _);
 
         public T[] RequestAndValidateArrayOf<T>(HttpMethod httpMethod) where T : IResponse, new()
         {
-            string content;
-            this.RequestAndValidate<T>(httpMethod, out content, ignoreSerializationErrors: true);
+            this.RequestAndValidate<T>(httpMethod, out var content, ignoreSerializationErrors: true);
 
             var collectionResponse = JsonConvert.DeserializeObject<T[]>(content);
             return collectionResponse;
@@ -141,7 +155,10 @@ namespace Common.Http
             var responseMessage = taskResponseMessage.Result;
 
             content = responseMessage.Content.ReadAsStringAsync().Result;
-            T response = new T();
+
+            Console.WriteLine(content);
+            
+            T response = default;
             if (!content.IsNullOrEmpty())
             {
                 try
@@ -151,26 +168,29 @@ namespace Common.Http
                 catch
                 {
                     if (!ignoreSerializationErrors && responseMessage.IsSuccessStatusCode)
-                    {
                         throw;
-                    }
+
+                    response = new T();
                 }
             }
 
-            Func<string, bool> isNotEmpty = input => !string.IsNullOrWhiteSpace(input);
+            if (response == null)
+                throw new NotSupportedException();
 
-            if (!responseMessage.IsSuccessStatusCode || isNotEmpty(response.ErrorCode) ||
-                isNotEmpty(response.ErrorMessage))
+            bool IsNotEmpty(string input) => !string.IsNullOrWhiteSpace(input);
+
+            if (!responseMessage.IsSuccessStatusCode || IsNotEmpty(response.ErrorCode) ||
+                IsNotEmpty(response?.ErrorMessage))
             {
                 var messageBuilder = new StringBuilder()
                     .AppendIf(
                         !responseMessage.IsSuccessStatusCode,
                         $"{responseMessage.StatusCode}. Reason: {responseMessage.ReasonPhrase}. ")
-                    .AppendIf(isNotEmpty(response.ErrorCode), response.ErrorCode + " ")
-                    .AppendIf(isNotEmpty(response.ErrorMessage), response.ErrorMessage + " ")
-                    .AppendIf(!isNotEmpty(response.ErrorCode + response.ErrorMessage), content);
+                    .AppendIf(IsNotEmpty(response.ErrorCode), response.ErrorCode + " ")
+                    .AppendIf(IsNotEmpty(response.ErrorMessage), response.ErrorMessage + " ")
+                    .AppendIf(!IsNotEmpty(response.ErrorCode + response.ErrorMessage), content);
 
-                throw new HttpException((int) responseMessage.StatusCode, messageBuilder.ToString());
+                throw new HttpException(responseMessage.StatusCode, messageBuilder.ToString());
             }
 
             return response;

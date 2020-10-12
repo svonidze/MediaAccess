@@ -96,7 +96,7 @@ namespace MediaServer.Workflow
                 return true;
             
             log.ReplyBack("You are not allowed to use this Bot instance. Run your own!");
-            log.Log($"Bot is not allowed for the user.");
+            log.Log($"Bot is not allowed for the user {message.From?.Username} {message.Chat.Id}.");
             return false;
         }
     }

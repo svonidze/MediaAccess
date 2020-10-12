@@ -1,0 +1,11 @@
+﻿{
+  "profiles": {
+    "ModulDengi.WatchDog": {
+      "commandName": "Project",
+      "commandLineArgs": "/media/sf_projects/home/media-server/ModulDengi/appsettings.json",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
