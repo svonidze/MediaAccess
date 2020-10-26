@@ -16,23 +16,23 @@ namespace ModulDengi.Core
         private static class RegexGroups
         {
             public const string ConfirmationCode = "code";
+
             public const string ProjectNumber = "projectNumber";
         }
-        
+
+        //<p>Входящее - ModulDengi (Контакт не определен) <br/>Текст сообщения: Код 7220<br />Инвестиция 1 500.00 р.<br />Оферта N308311
         private static readonly Regex EmailBodyRegex = new Regex(
-            @"Входящее - ModulDengi" +
-            ".+" +
-            "Текст сообщения: Код (?<code>\\d{4})" +
-            ".+" +
-            "Оферта N(?<projectNumber>\\d+)");
+            @"Входящее - ModulDengi" 
+            + ".+"
+            + "Текст сообщения: Код (?<code>\\d{4})"
+            + ".+"
+            + "Оферта N(?<projectNumber>\\d+)");
 
         private readonly EmailSettings emailSettings;
-        
+
         private readonly ILogger<EmailConfirmationManager> logger;
 
-        public EmailConfirmationManager(
-            ILogger<EmailConfirmationManager> logger, 
-            IOptions<EmailSettings> emailSettings)
+        public EmailConfirmationManager(ILogger<EmailConfirmationManager> logger, IOptions<EmailSettings> emailSettings)
         {
             this.logger = logger;
             this.emailSettings = emailSettings.Value;
@@ -55,7 +55,7 @@ namespace ModulDengi.Core
                 var inbox = client.Inbox;
                 inbox.Open(FolderAccess.ReadOnly);
 
-                this.logger.LogDebug($"Recent/Total messages: {inbox.Recent}/{inbox.Count}" );
+                this.logger.LogDebug($"Recent/Total messages: {inbox.Recent}/{inbox.Count}");
 
                 for (var mailNumber = inbox.Count; mailNumber > 0; mailNumber--)
                 {
@@ -64,12 +64,12 @@ namespace ModulDengi.Core
 
                     if (message.Date.UtcDateTime < checkSinceUtc)
                     {
-                        this.logger.LogWarning($"Email reading is stopped since the #{mailNumber} email got at " 
+                        this.logger.LogWarning(
+                            $"Email reading is stopped since the #{mailNumber} email got at "
                             + $"{message.Date.UtcDateTime} which is older than the min date {checkSinceUtc}");
                         return false;
                     }
-                    
-                    //<p>Входящее - ModulDengi (Контакт не определен) <br/>Текст сообщения: Код 7220<br />Инвестиция 1 500.00 р.<br />Оферта N308311
+
                     var match = EmailBodyRegex.Match(message.HtmlBody);
                     if (!match.Success)
                     {
@@ -84,17 +84,17 @@ namespace ModulDengi.Core
                     var actualProjectNumber = match.Groups[RegexGroups.ProjectNumber].Value;
                     if (actualProjectNumber != projectNumber)
                     {
-                        this.logger.LogDebug($"Skipping #{mailNumber} email since {nameof(projectNumber)}='{actualProjectNumber}' " 
+                        this.logger.LogDebug(
+                            $"Skipping #{mailNumber} email since {nameof(projectNumber)}='{actualProjectNumber}' "
                             + $" in the email body does not equal to the expected one '{projectNumber}'");
                         continue;
                     }
 
                     confirmationCode = match.Groups[RegexGroups.ConfirmationCode].Value;
-                    this.logger.LogDebug($"Extracted {nameof(confirmationCode)}='{confirmationCode}' from #{mailNumber} email");
+                    this.logger.LogDebug(
+                        $"Extracted {nameof(confirmationCode)}='{confirmationCode}' from #{mailNumber} email");
                     return true;
                 }
-
-                
             }
             finally
             {

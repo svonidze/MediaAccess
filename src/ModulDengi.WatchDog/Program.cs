@@ -2,11 +2,14 @@ namespace ModulDengi.WatchDog
 {
     using System;
     using System.IO;
-    using System.Linq;
+
+    using Common.Collections;
+    using Common.Http;
 
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
+    using Microsoft.Extensions.Logging;
 
     using ModulDengi.Contracts;
     using ModulDengi.Core;
@@ -24,9 +27,20 @@ namespace ModulDengi.WatchDog
             Host.CreateDefaultBuilder(args).ConfigureAppConfiguration(
                 (hostContext, config) =>
                     {
-                        if (args.Any())
+                        var configFilePath = Environment.GetEnvironmentVariable("CONFIG_FILE_PATH");
+                        var loggerFactory = LoggerFactory.Create(
+                            builder => 
+                                {
+                                    builder
+                                        .AddFilter("Microsoft", LogLevel.Warning)
+                                        .AddFilter("System", LogLevel.Warning)
+                                        .AddFilter("ModulDengi.WatchDog.Program", LogLevel.Debug)
+                                        .AddConsole();
+                                });
+                        var logger = loggerFactory.CreateLogger<Program>();
+                        logger.LogInformation($"configPath: {configFilePath}. Arguments: {args.JoinToString("; ")}");
+                        if (configFilePath != null)
                         {
-                            var configFilePath = args.First();
                             if (!File.Exists(configFilePath))
                                 throw new FileNotFoundException(configFilePath);
 
@@ -38,10 +52,9 @@ namespace ModulDengi.WatchDog
                                 $"appsettings{(environment != null ? $".{environment}" : null)}.json";
 
                             config.SetBasePath(Environment.CurrentDirectory)
-                                .AddJsonFile(GetAppSettingsPath(), optional: true, reloadOnChange: true)
-                                .AddJsonFile(
+                                .AddJsonFile(GetAppSettingsPath(), optional: true, reloadOnChange: true).AddJsonFile(
                                     GetAppSettingsPath(hostContext.HostingEnvironment.EnvironmentName),
-                                    optional: true);                            
+                                    optional: true);
                         }
 
                         config.AddEnvironmentVariables();
@@ -64,6 +77,9 @@ namespace ModulDengi.WatchDog
                             .AddTransient<IModulDengiApi, ModulDengiApi>()
                             .AddTransient<IConfirmationManager, EmailConfirmationManager>()
                             .AddTransient<IAccountant, Accountant>();
+
+                        services.AddTransient(
+                            provider => new HttpRequestBuilder(enableLogging: false));
 
                         services.AddHostedService<Worker>();
                     });

@@ -7,7 +7,6 @@
     using System.Threading.Tasks;
 
     using Common.Exceptions;
-    using Common.Net;
     using Common.Serialization.Json;
 
     using Microsoft.Extensions.Hosting;
@@ -89,7 +88,7 @@
                 }
                 catch (Exception e)
                 {
-                    this.logger.LogCritical(e.GetFullDescription("Unhandled exception"), e);
+                    this.logger.LogCritical(e, e.GetShortDescription("Unhandled exception"));
                 }
 
                 this.logger.LogDebug($"No new projects yet, waiting {this.newProjectCheckTimeSettings.CheckInterval} for the next check");

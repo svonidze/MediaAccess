@@ -17,12 +17,15 @@ namespace ModulDengi.Integration
 
     public class ModulDengiApi : IModulDengiApi
     {
-        private readonly ModulDengiAccessConfig accessConfig; 
+        private readonly ModulDengiAccessConfig accessConfig;
+
+        private readonly HttpRequestBuilder httpRequestBuilder;
         
         private string token;
 
-        public ModulDengiApi(IOptions<ModulDengiAccessConfig> accessConfig)
+        public ModulDengiApi(IOptions<ModulDengiAccessConfig> accessConfig, HttpRequestBuilder httpRequestBuilder)
         {
+            this.httpRequestBuilder = httpRequestBuilder;
             this.accessConfig = accessConfig.Value;
         }
 
@@ -111,7 +114,7 @@ namespace ModulDengi.Integration
         {
             var url = $"{this.accessConfig.SiteUrl}/api/users/login";
 
-            var httpBuilder = CreateHttpRequestBuilder()
+            var httpBuilder = this.httpRequestBuilder
                 .SetUrl(url)
                 .SetJsonPayload(new LoginRequest
                     {
@@ -132,7 +135,7 @@ namespace ModulDengi.Integration
             if (this.token == null && !this.TryLoginAndSetupToken())
                 throw new Exception("Login failed");
             
-            var httpBuilder = CreateHttpRequestBuilder()
+            var httpBuilder = this.httpRequestBuilder
                 .SetUrl(this.accessConfig.SiteUrl + urlPath)
                 .SetAuthorization(this.token);
             
@@ -153,7 +156,5 @@ namespace ModulDengi.Integration
                 throw;
             }
         }
-
-        private static HttpRequestBuilder CreateHttpRequestBuilder() => new HttpRequestBuilder(enableLogging: true);
     }
 }
