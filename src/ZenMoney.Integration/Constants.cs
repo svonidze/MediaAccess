@@ -1,15 +1,21 @@
 namespace ZenMoney.Integration
 {
+    using ModulDengi.Contracts;
+    using ModulDengi.Core;
+
     public static class Constants
     {
         public const string ZenmoneyUrl = "https://zenmoney.ru";
+
         public static readonly string ZenmoneyApiUrl = $"{ZenmoneyUrl}/api/v2/transaction/";
+
         public const string ZeroValue = "0";
 
-        public static readonly string[] IgnoringTypes = {
-                "unknown", "income", "outcome"
+        public static readonly AccountStatementType[] IgnoringAccountStatementType =
+            {
+                AccountStatementType.Unknown, AccountStatementType.Income, AccountStatementType.Outcome
             };
-            
+
         public static class Categories
         {
             public const string Комиссия = "14916896";

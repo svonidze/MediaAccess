@@ -13,29 +13,26 @@
             return Enum.TryParse(value, true, out result);
         }
 
-        public static T StringToEnum<T>(this string value) where T : struct, IConvertible
+        public static T StringToEnum<T>(this string value)
+            where T : struct, IConvertible
         {
-            if (!TryParseToEnum(value, out T result))
-            {
-                foreach (T enumValue in
-                    from T enumValue in Enum.GetValues(typeof(T))
-                    let stringEnumValue = EnumToString(enumValue)
-                    where stringEnumValue.Equals(value, StringComparison.InvariantCultureIgnoreCase)
-                    select enumValue)
-                {
-                    return enumValue;
-                }
-            }
-            else
+            if (TryParseToEnum(value, out T result))
             {
                 return result;
             }
 
-            throw new ArgumentException(
-                $"String value '{value}' is not element of enumeration '{nameof(T)}'");
+            var query = from T enumValue in Enum.GetValues(typeof(T))
+                let stringEnumValue = EnumToString(enumValue)
+                where stringEnumValue.Equals(value, StringComparison.InvariantCultureIgnoreCase)
+                select enumValue;
+            
+            foreach (var enumValue in query) return enumValue;
+
+            throw new ArgumentException($"String value '{value}' is not element of enumeration '{nameof(T)}'");
         }
 
-        public static T XmlEnumStringToEnum<T>(this string value) where T : struct
+        public static T XmlEnumStringToEnum<T>(this string value)
+            where T : struct
         {
             var enumValues = EnumToList<T>();
             var type = typeof(T);
@@ -56,8 +53,7 @@
                 }
             }
 
-            throw new ArgumentException(
-                $"XmlEnum value '{value}' is not found in enumeration '{type.Name}'");
+            throw new ArgumentException($"XmlEnum value '{value}' is not found in enumeration '{type.Name}'");
         }
 
         public static string EnumToString<T>(T @enum)
@@ -76,7 +72,8 @@
             return @enum.ToString();
         }
 
-        public static IEnumerable<T> EnumToList<T>() where T : struct
+        public static IEnumerable<T> EnumToList<T>()
+            where T : struct
         {
             var type = typeof(T);
 
@@ -125,28 +122,20 @@
 
             var mappings = GetFromStringMappings<T>();
 
-            var nonExistingItems = separatedString
-                .Split(separators, StringSplitOptions.RemoveEmptyEntries)
-                .Where(x => !mappings.ContainsKey(x))
-                .ToList();
+            var nonExistingItems = separatedString.Split(separators, StringSplitOptions.RemoveEmptyEntries)
+                .Where(x => !mappings.ContainsKey(x)).ToList();
 
             if (nonExistingItems.Any())
             {
-                throw new KeyNotFoundException(
-                    string.Format(
-                        "'{0}' not found in {1}",
-                        string.Join(", ", nonExistingItems),
-                        typeof(T).FullName));
+                throw new KeyNotFoundException($"'{string.Join(", ", nonExistingItems)}' not found in {nameof(T)}");
             }
 
-            return separatedString
-                .Split(separators, StringSplitOptions.RemoveEmptyEntries)
-                .Where(mappings.ContainsKey)
-                .Select(x => mappings[x])
-                .ToList();
+            return separatedString.Split(separators, StringSplitOptions.RemoveEmptyEntries).Where(mappings.ContainsKey)
+                .Select(x => mappings[x]).ToList();
         }
 
-        public static string ListOfEnumsToString<T>(List<T> collection, string separator) where T : struct, IConvertible
+        public static string ListOfEnumsToString<T>(List<T> collection, string separator)
+            where T : struct, IConvertible
         {
             if (!collection.Any())
             {
@@ -170,12 +159,12 @@
         public static List<T> MaskToListOfEnums<T>(T mask)
             where T : struct
         {
-            return
-                Enum.GetValues(typeof(T))
-                    .Cast<T>()
-                    .Where(v => ((int)(object)mask & (int)(object)v) == (int)(object)v)
-                    .Except(new List<T> { default(T) })
-                    .ToList();
+            return Enum.GetValues(typeof(T)).Cast<T>()
+                .Where(v => ((int)(object)mask & (int)(object)v) == (int)(object)v).Except(
+                    new List<T>
+                        {
+                            default(T)
+                        }).ToList();
         }
 
         private static Dictionary<string, T> GetFromStringMappings<T>()

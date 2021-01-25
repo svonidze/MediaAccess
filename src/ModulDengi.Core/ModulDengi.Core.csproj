@@ -6,6 +6,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Common.Net\Common.Net.csproj" />
+      <ProjectReference Include="..\Common.System\Common.System.csproj" />
       <ProjectReference Include="..\ModulDengi.Contracts\ModulDengi.Contracts.csproj" />
       <ProjectReference Include="..\ModulDengi.Integration\ModulDengi.Integration.csproj" />
     </ItemGroup>

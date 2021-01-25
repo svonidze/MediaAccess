@@ -7,6 +7,7 @@ namespace ZenMoney.Integration
     using System.Text;
 
     using Common.Serialization.Json;
+    using Common.System;
     using Common.Text;
 
     using ModulDengi.Contracts;
@@ -14,26 +15,32 @@ namespace ZenMoney.Integration
     using ModulDengi.Integration.Contracts.Responses;
 
     using ZenMoney.Integration.Contracts;
+    using ZenMoney.Integration.Contracts.Types;
 
     public static class ModulDengiToZenMoneyConverter
     {
         public static IEnumerable<string> ConvertToJsFetchRequest(AccountStatementResponse[] accountStatements)
         {
-            //Console.WriteLine(response.Where(x => x.Type == "unknown").ToJsonIndented());
-            // var dic = response.GroupBy(x => x.Type).ToDictionary(g => g.Key, g => g.First());
-            // Console.WriteLine(dic.ToJsonIndented());
-            var transactions = accountStatements.Where(x => !Constants.IgnoringTypes.Contains(x.Type)).Select(
-                statement =>
+            var transactions = accountStatements
+                .Select(
+                    statement => new
+                        {
+                            statement,
+                            StatementType = statement.Type.StringToEnum<AccountStatementType>()
+                        })
+                .Where(pair => !Constants.IgnoringAccountStatementType.Contains(pair.StatementType))
+                .Select(
+                    pair =>
                     {
+                        var statement = pair.statement;
                         var description = DescriptionExtractor.Extract(statement.Description);
                         if (description.BorrowerName == null)
                         {
                             throw new NotSupportedException(
                                 $"{nameof(Description.BorrowerName)} must be provided for {statement.Type}");
                         }
-                        
-                        var comment = new StringBuilder()
-                            .Append($"{statement.Title}: проект {description.ProjectId}")
+
+                        var comment = new StringBuilder().Append($"{statement.Title}: проект {description.ProjectId}")
                             .AppendIf(description.TimePeriodInDays.HasValue, $" срок {description.TimePeriodInDays} д.")
                             .AppendIf(description.Percent.HasValue, $" под {description.Percent}%");
 
@@ -44,55 +51,48 @@ namespace ZenMoney.Integration
                                 Date = statement.CreatedAt.ToString("dd.MM.yyyy"),
                                 Payee = description.BorrowerName.Replace("\"", null)
                             };
-                        
-                        string GetFormattedAmount() => Math.Abs(statement.Amount).ToString(CultureInfo.InvariantCulture);
 
-                        switch (statement.Type)
+                        string GetFormattedAmount() =>
+                            Math.Abs(statement.Amount).ToString(CultureInfo.InvariantCulture);
+
+                        var statementType = statement.Type.StringToEnum<AccountStatementType>();
+                        switch (statementType)
                         {
-                            //Возврат займа
-                            case "refundMain":
+                            case AccountStatementType.RefundMain:
                                 if (statement.Amount < 0)
                                 {
                                     throw new NotSupportedException(
                                         $"Not expected that Amount is negative: {new { statement.Amount, statement.Type }.ToJson()}");
                                 }
+
                                 transaction.AccountIncome = Constants.Wallets.МодульДеньгиRub;
                                 transaction.AccountOutcome = Constants.Wallets.Долг;
                                 transaction.Outcome = transaction.Income = GetFormattedAmount();
                                 return transaction;
-                            //Выдача займа
-                            case "fund":
+                            case AccountStatementType.Fund:
                                 if (statement.Amount > 0)
                                 {
                                     throw new NotSupportedException(
                                         $"Not expected that Amount is positive: {new { statement.Amount, statement.Type }.ToJson()}");
                                 }
+
                                 transaction.AccountIncome = Constants.Wallets.Долг;
                                 transaction.AccountOutcome = Constants.Wallets.МодульДеньгиRub;
                                 transaction.Outcome = transaction.Income = GetFormattedAmount();
                                 return transaction;
-                            //Комиссия по цессии
-                            case "cessionCommission":
+                            case AccountStatementType.CessionCommission:
                                 transaction.TagGroups = new[]
                                     {
                                         Constants.Categories.Комиссия
                                     };
                                 break;
-                            //Получение процентов по займу (срочные)
-                            case "refundPercentage":
-                            //Получение процентов по займу (штрафные сверхсрочные)
-                            case "refundPenaltyPercentage":
+                            case AccountStatementType.RefundPercentage:
+                            case AccountStatementType.RefundPenaltyPercentage:
                                 transaction.TagGroups = new[]
                                     {
                                         Constants.Categories.ДолгПроценты
                                     };
                                 break;
-                            //Отмена сбора средств проекта 
-                            case "unknown":
-                            //Пополнение (счет)
-                            case "income":
-                            //Вывод средств
-                            case "outcome": 
                             default:
                                 throw new NotSupportedException(statement.Type);
                         }
@@ -115,10 +115,14 @@ namespace ZenMoney.Integration
 
             foreach (var transaction in transactions)
             {
-                yield return WrapToFetch(new[] { transaction });
+                yield return WrapToFetch(
+                    new[]
+                        {
+                            transaction
+                        });
             }
         }
-        
+
         private static string WrapToFetch(Transaction[] transactions)
         {
             var headers = new Dictionary<string, object>

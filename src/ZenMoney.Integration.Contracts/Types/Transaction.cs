@@ -1,7 +1,5 @@
-﻿namespace ZenMoney.Integration.Contracts
+﻿namespace ZenMoney.Integration.Contracts.Types
 {
-    using System.Collections.Generic;
-
     using Newtonsoft.Json;
 
     public class Transaction
