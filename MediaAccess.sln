@@ -69,6 +69,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModulDengi.Core.Tests", "sr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModulDengi.Integration.Contracts", "src\ModulDengi.Integration.Contracts\ModulDengi.Integration.Contracts.csproj", "{197550A6-0070-4FD5-9193-660564530287}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZenMoney.Integration.Contracts", "src\ZenMoney.Integration.Contracts\ZenMoney.Integration.Contracts.csproj", "{79389790-92A6-4D5C-ADD7-E14B81CC5857}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZenMoney.Integration", "src\ZenMoney.Integration\ZenMoney.Integration.csproj", "{6E485B67-0BDA-4637-8266-B2D714DE5016}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZenMoney.Integration.Tests", "src\ZenMoney.Integration.Tests\ZenMoney.Integration.Tests.csproj", "{9DEED9B3-E4F0-4262-8E7A-369D87A41364}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kontur.Elba.Integration", "src\Kontur.Elba.Integration\Kontur.Elba.Integration.csproj", "{B61058E2-1956-401F-A763-7833CD125050}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -179,6 +187,22 @@ Global
 		{197550A6-0070-4FD5-9193-660564530287}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{197550A6-0070-4FD5-9193-660564530287}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{197550A6-0070-4FD5-9193-660564530287}.Release|Any CPU.Build.0 = Release|Any CPU
+		{79389790-92A6-4D5C-ADD7-E14B81CC5857}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79389790-92A6-4D5C-ADD7-E14B81CC5857}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79389790-92A6-4D5C-ADD7-E14B81CC5857}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79389790-92A6-4D5C-ADD7-E14B81CC5857}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6E485B67-0BDA-4637-8266-B2D714DE5016}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6E485B67-0BDA-4637-8266-B2D714DE5016}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6E485B67-0BDA-4637-8266-B2D714DE5016}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6E485B67-0BDA-4637-8266-B2D714DE5016}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9DEED9B3-E4F0-4262-8E7A-369D87A41364}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9DEED9B3-E4F0-4262-8E7A-369D87A41364}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9DEED9B3-E4F0-4262-8E7A-369D87A41364}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9DEED9B3-E4F0-4262-8E7A-369D87A41364}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B61058E2-1956-401F-A763-7833CD125050}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B61058E2-1956-401F-A763-7833CD125050}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B61058E2-1956-401F-A763-7833CD125050}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B61058E2-1956-401F-A763-7833CD125050}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{2CB43C8A-0987-4EC0-BB65-0AC8120F64F4} = {5A0ECF7E-F3DD-4C90-A8DB-0F536E76612A}

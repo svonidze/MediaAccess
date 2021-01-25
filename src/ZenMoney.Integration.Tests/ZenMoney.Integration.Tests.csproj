@@ -14,8 +14,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\ModulDengi.Core\ModulDengi.Core.csproj" />
-      <ProjectReference Include="..\ZenMoney.Integration.Contracts\ZenMoney.Integration.Contracts.csproj" />
+      <ProjectReference Include="..\Common.Http\Common.Http.csproj" />
+      <ProjectReference Include="..\ModulDengi.Contracts\ModulDengi.Contracts.csproj" />
+      <ProjectReference Include="..\ModulDengi.Integration\ModulDengi.Integration.csproj" />
       <ProjectReference Include="..\ZenMoney.Integration\ZenMoney.Integration.csproj" />
     </ItemGroup>
 

@@ -7,13 +7,15 @@ namespace ModulDengi.Integration
 
     using Common.Exceptions;
     using Common.Http;
+    using Common.Results;
 
     using Microsoft.Extensions.Options;
 
     using ModulDengi.Contracts;
     using ModulDengi.Integration.Contracts;
-    using ModulDengi.Integration.Contracts.Requestes;
+    using ModulDengi.Integration.Contracts.Requests;
     using ModulDengi.Integration.Contracts.Responses;
+    using ModulDengi.Integration.Contracts.Types;
 
     public class ModulDengiApi : IModulDengiApi
     {
@@ -29,23 +31,18 @@ namespace ModulDengi.Integration
             this.accessConfig = accessConfig.Value;
         }
 
-        public CompanyResponse[] MyCompanies()
-        {
-            return this.AuthAndRun(
+        public CompanyResponse[] MyCompanies() =>
+            this.AuthAndRun(
                 "/api/companies",
                 httpBuilder => httpBuilder.RequestAndValidateArrayOf<CompanyResponse>(HttpMethod.Get));
-        }
 
-        public BalanceResponse MyBalance(string myCompanyId)
-        {
-            return this.AuthAndRun(
+        public BalanceResponse GetBalance(string myCompanyId) =>
+            this.AuthAndRun(
                 $"/api/companies/{myCompanyId}/balance",
                 httpBuilder => httpBuilder.RequestAndValidate<BalanceResponse>(HttpMethod.Get));
-        }
 
-        public InvestmentDoneResponse[] MyInvestments(string myCompanyId)
-        {
-            return this.AuthAndRun(
+        public InvestmentDoneResponse[] GetInvestments(string myCompanyId) =>
+            this.AuthAndRun(
                 "/api/projects/my/investments",
                 httpBuilder => httpBuilder.AddUrlQueryValues(
                         new NameValueCollection
@@ -53,21 +50,16 @@ namespace ModulDengi.Integration
                                 { "companyId", myCompanyId }
                             })
                     .RequestAndValidateArrayOf<InvestmentDoneResponse>(HttpMethod.Get));
-        }
 
-        public InvestmentPendingResponse[] ProjectsRisingFunds()
-        {
-            return this.AuthAndRun(
+        public InvestmentPendingResponse[] GetProjectsRisingFunds() =>
+            this.AuthAndRun(
                 "/api/projects/rising-funds",
                 httpBuilder => httpBuilder.RequestAndValidateArrayOf<InvestmentPendingResponse>(HttpMethod.Get));
-        }
 
-        public CompanyResponse2 CompanyInfo(string companyId, string myCompanyId)
-        {
-            // if companyId is not found then 404
-            //https://cabinet.moduldengi.ru/api/projects/3ccaffb2-4def-4584-b7ba-ec0ab8e8fd7f?companyId=a33523e3-4f7f-4170-bed2-c91ee2790d96
-            
-            return this.AuthAndRun(
+        // if companyId is not found then 404
+        //https://cabinet.moduldengi.ru/api/projects/3ccaffb2-4def-4584-b7ba-ec0ab8e8fd7f?companyId=a33523e3-4f7f-4170-bed2-c91ee2790d96
+        public CompanyResponse2 CompanyInfo(string companyId, string myCompanyId) =>
+            this.AuthAndRun(
                 $"/api/projects/{companyId}",
                 httpBuilder => httpBuilder.AddUrlQueryValues(
                         new NameValueCollection
@@ -75,7 +67,6 @@ namespace ModulDengi.Integration
                                 { "companyId", myCompanyId }
                             })
                     .RequestAndValidate<CompanyResponse2>(HttpMethod.Get));
-        }
 
         public InvestmentCreatedResponse CreateInvestment(string projectId, double money) =>
             this.AuthAndRun(
@@ -109,6 +100,28 @@ namespace ModulDengi.Integration
                             Code = confirmationCode
                         })
                     .RequestAndValidate<ModulDengiResponse>(HttpMethod.Post));
+        
+        //dateSince=2017-08-31T21%3A00%3A00.000Z
+        //&dateTo=2021-01-02T15%3A21%3A54.110Z
+        //&companyId=a33523e3-4f7f-4170-bed2-c91ee2790d96
+        //&accountType=investor
+        public AccountStatementResponse[] GetAccountStatements(string companyId, DateTime? dateSince, DateTime? dateTo)
+        {
+            var queryValues = new NameValueCollection
+                {
+                    { "companyId", companyId },
+                    { "accountType", "investor" },
+                };
+            if(dateSince.HasValue)
+                queryValues.Add("dateSince", dateSince.Value.ToString("u"));
+            if(dateTo.HasValue)
+                queryValues.Add("dateTo", dateTo.Value.ToString("u"));
+            
+            return this.AuthAndRun(
+                "/api/companies/account-statement",
+                httpBuilder => httpBuilder.AddUrlQueryValues(queryValues)
+                    .RequestAndValidateArrayOf<AccountStatementResponse>(HttpMethod.Get));
+        }
 
         private bool TryLoginAndSetupToken()
         {

@@ -11,6 +11,7 @@
     <ItemGroup>
       <ProjectReference Include="..\Common.Results\Common.Results.csproj" />
       <ProjectReference Include="..\Common.Http.Contracts\Common.Http.Contracts.csproj" />
+      <ProjectReference Include="..\Common.Serialization.Json\Common.Serialization.Json.csproj" />
     </ItemGroup>
 
 </Project>

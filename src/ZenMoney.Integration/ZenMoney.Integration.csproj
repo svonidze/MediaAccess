@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Common.Serialization.Json\Common.Serialization.Json.csproj" />
+      <ProjectReference Include="..\Common.Text\Common.Text.csproj" />
+      <ProjectReference Include="..\ModulDengi.Contracts\ModulDengi.Contracts.csproj" />
+      <ProjectReference Include="..\ModulDengi.Core\ModulDengi.Core.csproj" />
+      <ProjectReference Include="..\ModulDengi.Integration.Contracts\ModulDengi.Integration.Contracts.csproj" />
+      <ProjectReference Include="..\ZenMoney.Integration.Contracts\ZenMoney.Integration.Contracts.csproj" />
+    </ItemGroup>
+
+</Project>

@@ -1,4 +1,4 @@
-namespace ModulDengi.Integration.Contracts.Requestes
+namespace ModulDengi.Integration.Contracts.Requests
 {
     using Newtonsoft.Json;
 

@@ -52,7 +52,8 @@ namespace ModulDengi.WatchDog
                                 $"appsettings{(environment != null ? $".{environment}" : null)}.json";
 
                             config.SetBasePath(Environment.CurrentDirectory)
-                                .AddJsonFile(GetAppSettingsPath(), optional: true, reloadOnChange: true).AddJsonFile(
+                                .AddJsonFile(GetAppSettingsPath(), optional: true, reloadOnChange: true)
+                                .AddJsonFile(
                                     GetAppSettingsPath(hostContext.HostingEnvironment.EnvironmentName),
                                     optional: true);
                         }

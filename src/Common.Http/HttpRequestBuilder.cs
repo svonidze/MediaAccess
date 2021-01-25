@@ -30,7 +30,7 @@ namespace Common.Http
 
         public HttpRequestBuilder(TimeSpan? timeout = null, bool enableLogging = false)
         {
-            HttpMessageHandler CreateMessageLogger() =>
+            static HttpMessageHandler CreateMessageLogger() =>
                 new LoggingHandler(
                     new HttpClientHandler
                         {

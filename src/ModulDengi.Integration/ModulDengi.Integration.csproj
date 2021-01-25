@@ -17,10 +17,4 @@
       <PackageReference Include="Microsoft.Extensions.Options" Version="3.1.8" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Contracts\Requestes" />
-      <Folder Include="Contracts\Responses" />
-      <Folder Include="Contracts\Types" />
-    </ItemGroup>
-
 </Project>

@@ -45,7 +45,7 @@ namespace ModulDengi.Core
         }
 
         public Project[] GetProjectsRisingFunds() =>
-            this.api.ProjectsRisingFunds()
+            this.api.GetProjectsRisingFunds()
                 .Select(
                     p => new Project
                         {
@@ -63,7 +63,7 @@ namespace ModulDengi.Core
         public double GetMyFreeMoneyAmount()
         {
             //var myCompany = this.api.MyCompanies().Single();
-            var balance = this.api.MyBalance(this.accessConfig.MyCompanyId);
+            var balance = this.api.GetBalance(this.accessConfig.MyCompanyId);
             return balance.Investor.Free;
         }
         
@@ -118,6 +118,11 @@ namespace ModulDengi.Core
                 {
                     Success = true
                 };
+        }
+
+        public void aa()
+        {
+            this.api.GetInvestments(this.accessConfig.MyCompanyId);
         }
     }
 }
