@@ -9,7 +9,7 @@ namespace Common.Http.Tests
     {
         private static readonly Encoding[] Encodings =
         {
-            Encoding.ASCII, Encoding.BigEndianUnicode, Encoding.Default, Encoding.Unicode, Encoding.UTF32, Encoding.UTF7, Encoding.UTF8
+            Encoding.ASCII, Encoding.BigEndianUnicode, Encoding.Default, Encoding.Unicode, Encoding.UTF32, Encoding.UTF8
         };
 
         [SetUp]
