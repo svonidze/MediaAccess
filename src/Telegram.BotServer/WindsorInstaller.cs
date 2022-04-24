@@ -1,4 +1,4 @@
-namespace Telegram.FirstBot
+namespace Telegram.BotServer
 {
     using System;
     using System.Collections.Generic;
@@ -23,7 +23,7 @@ namespace Telegram.FirstBot
     {
         public static IWindsorInstaller Register(Configuration configuration = default) =>
             configuration == default
-                ? (IWindsorInstaller)new WithNoConfiguration()
+                ? new WithNoConfiguration()
                 : new WithConfiguration(configuration);
 
         private class WithConfiguration : IWindsorInstaller
@@ -41,14 +41,24 @@ namespace Telegram.FirstBot
                     Component.For<ITelegramBotClient>().UsingFactoryMethod(
                         () =>
                             {
-                                var proxy = this.configuration.Proxy;
-                                var webProxy = new WebProxy(proxy.Host, proxy.Port)
+                                var telegramBotTimeout =
+                                    this.configuration.TelegramBot.Timeout ?? TimeSpan.FromMinutes(1);
+
+                                var proxy = this.configuration.TelegramBot.Proxy;
+                                if (proxy != null)
+                                {
+                                    var webProxy = new WebProxy(proxy.Host, proxy.Port)
+                                        {
+                                            Credentials = new NetworkCredential(proxy.UserName, proxy.Password)
+                                        };
+                                    return new TelegramBotClient(this.configuration.TelegramBot.Token, webProxy)
+                                        {
+                                            Timeout = telegramBotTimeout
+                                        };
+                                }
+                                return new TelegramBotClient(this.configuration.TelegramBot.Token)
                                     {
-                                        Credentials = new NetworkCredential(proxy.UserName, proxy.Password)
-                                    };
-                                return new TelegramBotClient(this.configuration.TelegramBot.Token, webProxy)
-                                    {
-                                        Timeout = this.configuration.TelegramBot.Timeout ?? TimeSpan.FromMinutes(1)
+                                        Timeout = telegramBotTimeout
                                     };
                             }).LifestyleSingleton());
 

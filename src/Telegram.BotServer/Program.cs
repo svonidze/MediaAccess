@@ -1,4 +1,4 @@
-﻿namespace Telegram.FirstBot
+﻿namespace Telegram.BotServer
 {
     using System;
     using System.IO;

@@ -1,26 +1,28 @@
-using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.IO;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Threading.Tasks;
-using System.Web;
-using Common.Exceptions;
-using Common.Http.Contracts;
-using Common.Serialization.Json;
-using Common.Text;
-using Newtonsoft.Json;
-
 namespace Common.Http
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Collections.Specialized;
+    using System.IO;
+    using System.Net.Http;
+    using System.Net.Http.Headers;
+    using System.Text;
+    using System.Threading.Tasks;
+    using System.Web;
+
+    using Common.Exceptions;
+    using Common.Http.Contracts;
+    using Common.Serialization.Json;
+    using Common.Text;
+
     using JetBrains.Annotations;
+
+    using Newtonsoft.Json;
 
     public class HttpRequestBuilder
     {
         private UriBuilder uriBuilder;
-        
+
         private readonly HttpClient httpClient;
 
         [CanBeNull]
@@ -52,7 +54,7 @@ namespace Common.Http
 
             return this;
         }
-        
+
         public HttpRequestBuilder AddUrlQueryValues(NameValueCollection queryValues)
         {
             if (this.uriBuilder == null || queryValues == null)
@@ -61,7 +63,7 @@ namespace Common.Http
             var query = HttpUtility.ParseQueryString(this.uriBuilder.Query);
             query.Add(queryValues);
 
-            this.uriBuilder.Query = query.ToString();
+            this.uriBuilder.Query = query.ToString()!;
 
             return this;
         }
@@ -71,7 +73,7 @@ namespace Common.Http
             this.httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             return this;
         }
-        
+
         public HttpRequestBuilder SetCookie(NameValueCollection cookieValues)
         {
             if (cookieValues == null)
@@ -98,9 +100,9 @@ namespace Common.Http
 
                     var payloadStringContent = new StringContent(value, Encoding.UTF8, "multipart/form-data");
                     payloadStringContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
-                    {
-                        Name = key,
-                    };
+                        {
+                            Name = key,
+                        };
                     contentContainer.Add(payloadStringContent);
                 }
             }
@@ -113,10 +115,10 @@ namespace Common.Http
 
                     var streamContent = new StreamContent(fileStream);
                     streamContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
-                    {
-                        Name = newName,
-                        FileName = $"\"{fileStream.Name}\"",
-                    };
+                        {
+                            Name = newName,
+                            FileName = $"\"{fileStream.Name}\"",
+                        };
                     streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
 
                     contentContainer.Add(streamContent);
@@ -136,9 +138,12 @@ namespace Common.Http
             return this;
         }
 
-        public T RequestAndValidate<T>(HttpMethod httpMethod) where T : IResponse, new() => this.RequestAndValidate<T>(httpMethod, out _);
+        public T RequestAndValidate<T>(HttpMethod httpMethod)
+            where T : IResponse, new() =>
+            this.RequestAndValidate<T>(httpMethod, out _);
 
-        public T[] RequestAndValidateArrayOf<T>(HttpMethod httpMethod) where T : IResponse, new()
+        public T[] RequestAndValidateArrayOf<T>(HttpMethod httpMethod)
+            where T : IResponse, new()
         {
             this.RequestAndValidate<T>(httpMethod, out var content, ignoreSerializationErrors: true);
 
@@ -149,7 +154,8 @@ namespace Common.Http
         private T RequestAndValidate<T>(
             HttpMethod httpMethod,
             out string content,
-            bool ignoreSerializationErrors = false) where T : IResponse, new()
+            bool ignoreSerializationErrors = false)
+            where T : IResponse, new()
         {
             var taskResponseMessage = this.SendRequestAsync<T>(httpMethod);
             var responseMessage = taskResponseMessage.Result;
@@ -157,7 +163,7 @@ namespace Common.Http
             content = responseMessage.Content.ReadAsStringAsync().Result;
 
             Console.WriteLine(content);
-            
+
             T response = default;
             if (!content.IsNullOrEmpty())
             {
@@ -179,16 +185,17 @@ namespace Common.Http
 
             bool IsNotEmpty(string input) => !string.IsNullOrWhiteSpace(input);
 
-            if (!responseMessage.IsSuccessStatusCode || IsNotEmpty(response.ErrorCode) ||
-                IsNotEmpty(response?.ErrorMessage))
+            if (!responseMessage.IsSuccessStatusCode || IsNotEmpty(response.ErrorCode)
+                || IsNotEmpty(response.ErrorMessage))
             {
                 var messageBuilder = new StringBuilder()
                     .AppendIf(
                         !responseMessage.IsSuccessStatusCode,
                         $"{responseMessage.StatusCode}. Reason: {responseMessage.ReasonPhrase}. ")
                     .AppendIf(IsNotEmpty(response.ErrorCode), response.ErrorCode + " ")
-                    .AppendIf(IsNotEmpty(response.ErrorMessage), response.ErrorMessage + " ")
-                    .AppendIf(!IsNotEmpty(response.ErrorCode + response.ErrorMessage), content);
+                    .AppendIf(IsNotEmpty(response.ErrorMessage), response.ErrorMessage + " ").AppendIf(
+                        !IsNotEmpty(response.ErrorCode + response.ErrorMessage),
+                        content);
 
                 throw new HttpException(responseMessage.StatusCode, messageBuilder.ToString());
             }
