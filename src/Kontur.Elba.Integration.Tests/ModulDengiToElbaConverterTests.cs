@@ -13,7 +13,7 @@ namespace Kontur.Elba.Integration.Tests
 
     using NUnit.Framework;
 
-    public class ModulDengiToZenMoneyConverterTests
+    public class ModulDengiToElbaConverterTests
     {
         private const string MyCompanyId = "";
 
@@ -24,7 +24,7 @@ namespace Kontur.Elba.Integration.Tests
         {
             var modulDengiAccessConfig = new ModulDengiAccessConfig
                 {
-                    SiteUrl = "https://cabinet.moduldengi.ru",
+                    SiteUrl = "https://cabinet.mdfin.ru",
                     MyCompanyId = MyCompanyId,
                     Credential = new Credential
                         {
@@ -36,7 +36,7 @@ namespace Kontur.Elba.Integration.Tests
                 .AddOptions()
                 .AddSingleton(Options.Create(modulDengiAccessConfig))
                 .AddTransient<IModulDengiApi, ModulDengiApi>()
-                .AddTransient(provider => new HttpRequestBuilder(enableLogging: false));
+                .AddTransient(provider => new HttpRequestBuilder(enableLogging: true));
             
             var serviceProvider = services.BuildServiceProvider();
             
@@ -48,7 +48,7 @@ namespace Kontur.Elba.Integration.Tests
         {
             var accountStatements = this.modulDengiApi.GetAccountStatements(
                 MyCompanyId,
-                dateSince: DateTime.Parse("2020-12-29"));
+                dateSince: DateTime.Parse("2021-12-30"));
             foreach (var item in ModulDengiToElbaConverter.ConvertToJsFetchRequest(accountStatements))
             {
                 Console.WriteLine(item);

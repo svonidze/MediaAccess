@@ -24,7 +24,7 @@ namespace ZenMoney.Integration.Tests
         {
             var modulDengiAccessConfig = new ModulDengiAccessConfig
                 {
-                    SiteUrl = "https://cabinet.moduldengi.ru",
+                    SiteUrl = "https://cabinet.mdfin.ru",
                     MyCompanyId = MyCompanyId,
                     Credential = new Credential
                         {
@@ -48,7 +48,7 @@ namespace ZenMoney.Integration.Tests
         {
             var accountStatements = this.modulDengiApi.GetAccountStatements(
                 MyCompanyId,
-                dateSince: DateTime.Parse("2020-07-23"));
+                dateSince: DateTime.Parse("2021-12-30"));
             foreach (var item in ModulDengiToZenMoneyConverter.ConvertToJsFetchRequest(accountStatements))
             {
                 Console.WriteLine(item);
