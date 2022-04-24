@@ -105,15 +105,15 @@ namespace ModulDengi.Integration
         //&dateTo=2021-01-02T15%3A21%3A54.110Z
         //&companyId=a33523e3-4f7f-4170-bed2-c91ee2790d96
         //&accountType=investor
-        public AccountStatementResponse[] GetAccountStatements(string companyId, DateTime? dateSince, DateTime? dateTo)
+        public AccountStatementResponse[] GetAccountStatements(string companyId, DateTime? sinceDate, DateTime? dateTo)
         {
             var queryValues = new NameValueCollection
                 {
                     { "companyId", companyId },
                     { "accountType", "investor" },
                 };
-            if(dateSince.HasValue)
-                queryValues.Add("dateSince", dateSince.Value.ToString("u"));
+            if(sinceDate.HasValue)
+                queryValues.Add("dateSince", sinceDate.Value.ToString("u"));
             if(dateTo.HasValue)
                 queryValues.Add("dateTo", dateTo.Value.ToString("u"));
             

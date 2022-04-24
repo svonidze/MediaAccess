@@ -18,6 +18,6 @@ namespace ModulDengi.Integration.Contracts
 
         InvestmentDoneResponse[] GetInvestments(string myCompanyId);
 
-        AccountStatementResponse[] GetAccountStatements(string companyId, DateTime? dateSince = null, DateTime? dateTo = null);
+        AccountStatementResponse[] GetAccountStatements(string companyId, DateTime? sinceDate = null, DateTime? dateTo = null);
     }
 }
