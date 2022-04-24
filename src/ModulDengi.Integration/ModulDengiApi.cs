@@ -7,7 +7,6 @@ namespace ModulDengi.Integration
 
     using Common.Exceptions;
     using Common.Http;
-    using Common.Results;
 
     using Microsoft.Extensions.Options;
 
@@ -15,7 +14,6 @@ namespace ModulDengi.Integration
     using ModulDengi.Integration.Contracts;
     using ModulDengi.Integration.Contracts.Requests;
     using ModulDengi.Integration.Contracts.Responses;
-    using ModulDengi.Integration.Contracts.Types;
 
     public class ModulDengiApi : IModulDengiApi
     {
