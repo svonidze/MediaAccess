@@ -12,7 +12,6 @@ namespace MediaServer.Contracts
 
         public TimeSpan? Timeout { get; set; }
         
-        [CanBeNull]
-        public Proxy Proxy { get; set; }
+        public Proxy? Proxy { get; set; }
     }
 }

@@ -1,9 +1,7 @@
 ﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=e11376c1_002De58f_002D43e4_002D9a4e_002D4c79bddd589e/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Film" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
   &lt;TestAncestor&gt;
-    &lt;TestId&gt;NUnit3x::74206263-CBCA-4FE5-9833-9C8B51814000::net5.0::Kontur.Elba.Integration.Tests.ModulDengiToZenMoneyConverterTests.ConvertToJsFetchRequestTest&lt;/TestId&gt;
-    &lt;TestId&gt;NUnit3x::9DEED9B3-E4F0-4262-8E7A-369D87A41364::net5.0::ZenMoney.Integration.Tests.ModulDengiToZenMoneyConverterTests.ConvertToJsFetchRequestTest&lt;/TestId&gt;
-    &lt;TestId&gt;NUnit3x::9DEED9B3-E4F0-4262-8E7A-369D87A41364::net5.0::ZenMoney.Integration.Tests.ModulDengiToZenMoneyConverterTests&lt;/TestId&gt;
+    &lt;TestId&gt;NUnit3x::C5B0CA38-57C7-4282-810F-C813B0EDDAE9::net5.0::Common.Http.Tests.Tests.Test&lt;/TestId&gt;
   &lt;/TestAncestor&gt;
 &lt;/SessionState&gt;</s:String>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=jackett/@EntryIndexedValue">True</s:Boolean></wpf:ResourceDictionary>

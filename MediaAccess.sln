@@ -44,7 +44,7 @@ ProjectSection(SolutionItems) = preProject
 	.dockerignore = .dockerignore
 	README.md = README.md
 	config.example.yaml = config.example.yaml
-	Dockerfile.ubuntu-bionic-arm32v7 = Dockerfile.ubuntu-bionic-arm32v7
+	Dockerfile.ubuntu-jammy-arm32v7.Dockerfile = Dockerfile.ubuntu-jammy-arm32v7.Dockerfile
 	ModulDengi.WatchDog.Dockerfile = ModulDengi.WatchDog.Dockerfile
 	ModulDengi.WatchDog.bionic-arm32v7.Dockerfile = ModulDengi.WatchDog.bionic-arm32v7.Dockerfile
 EndProjectSection

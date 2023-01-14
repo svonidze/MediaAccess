@@ -41,7 +41,7 @@
 
             if (!File.Exists(configurationFilePath))
             {
-                serverLogger.Log($"No configuration file found at {configurationFilePath}");
+                serverLogger.Log($"No configuration file found at {configurationFilePath}. Exiting.");
                 Environment.Exit(1);
             }
 
@@ -57,7 +57,7 @@
 
         private static void UnhandledExceptionTrapper(UnhandledExceptionEventArgs e, IServerLogger serverLogger)
         {
-            serverLogger.Log(e.ExceptionObject.ToString());
+            serverLogger.Log(e.ExceptionObject.ToString() ?? string.Empty);
         }
 
         private static IWindsorContainer InitializeContainer()

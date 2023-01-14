@@ -2,28 +2,28 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net5.0</TargetFramework>
+        <TargetFramework>net7.0</TargetFramework>
         <LangVersion>default</LangVersion>
-        <Nullable>disable</Nullable>
+        <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Castle.Windsor" Version="5.0.1" />
-      <PackageReference Include="Telegram.Bot" Version="15.0.0" />
+        <PackageReference Include="Castle.Windsor" Version="5.0.1"/>
+        <PackageReference Include="Telegram.Bot" Version="15.0.0"/>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\BitTorrent.Transmission\BitTorrent.Transmission.csproj" />
-      <ProjectReference Include="..\Common.Collections\Common.Collections.csproj" />
-      <ProjectReference Include="..\Common.Cryptography\Common.Cryptography.csproj" />
-      <ProjectReference Include="..\Common.DateTime\Common.DateTime.csproj" />
-      <ProjectReference Include="..\Common.Exceptions\Common.Exceptions.csproj" />
-      <ProjectReference Include="..\Common.Http\Common.Http.csproj" />
-      <ProjectReference Include="..\Common.Net\Common.Net.csproj" />
-      <ProjectReference Include="..\Common.Serialization.Yaml\Common.Serialization.Yaml.csproj" />
-      <ProjectReference Include="..\Common.Text\Common.Text.csproj" />
-      <ProjectReference Include="..\Jackett.Contracts\Jackett.Contracts.csproj" />
-      <ProjectReference Include="..\MediaAccess.Workflow\MediaAccess.Workflow.csproj" />
+        <ProjectReference Include="..\BitTorrent.Transmission\BitTorrent.Transmission.csproj"/>
+        <ProjectReference Include="..\Common.Collections\Common.Collections.csproj"/>
+        <ProjectReference Include="..\Common.Cryptography\Common.Cryptography.csproj"/>
+        <ProjectReference Include="..\Common.DateTime\Common.DateTime.csproj"/>
+        <ProjectReference Include="..\Common.Exceptions\Common.Exceptions.csproj"/>
+        <ProjectReference Include="..\Common.Http\Common.Http.csproj"/>
+        <ProjectReference Include="..\Common.Net\Common.Net.csproj"/>
+        <ProjectReference Include="..\Common.Serialization.Yaml\Common.Serialization.Yaml.csproj"/>
+        <ProjectReference Include="..\Common.Text\Common.Text.csproj"/>
+        <ProjectReference Include="..\Jackett.Contracts\Jackett.Contracts.csproj"/>
+        <ProjectReference Include="..\MediaAccess.Workflow\MediaAccess.Workflow.csproj"/>
     </ItemGroup>
 
 </Project>

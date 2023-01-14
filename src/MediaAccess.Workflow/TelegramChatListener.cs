@@ -40,16 +40,16 @@ namespace MediaServer.Workflow
 
         private readonly IDictionary<string, Uri> hashToUrl;
 
-        private ManualSearchResult torrents;
+        private ManualSearchResult? torrents;
 
-        private TrackerCacheResult torrent;
+        private TrackerCacheResult? torrent;
 
         private bool waitingForUserInput;
 
         public TelegramChatListener(
-            [NotNull] ViewFilterConfiguration viewFilterConfig,
-            [NotNull] IJackettIntegration jackett,
-            [NotNull] IBitTorrentClient bitTorrentClient)
+            ViewFilterConfiguration viewFilterConfig,
+            IJackettIntegration jackett,
+            IBitTorrentClient bitTorrentClient)
         {
             this.viewFilterConfig = viewFilterConfig.DeepCopy();
             this.jackett = jackett;
@@ -69,7 +69,7 @@ namespace MediaServer.Workflow
                     { BotCommands.DownloadTorrentFile.Regex, DownloadTorrentFile },
                 };
          
-            bool TryFindTorrentInLocalResults(Match match, out string hashedUri, out TrackerCacheResult torrentCandidate)
+            bool TryFindTorrentInLocalResults(Match match, out string hashedUri, out TrackerCacheResult? torrentCandidate)
             {
                 torrentCandidate = default;
                 
@@ -108,8 +108,10 @@ namespace MediaServer.Workflow
             
             void DownloadTorrentFile(Match match)
             {
-                if (!TryFindTorrentInLocalResults(match, out var hashedUri, out this.torrent))
+                if (!TryFindTorrentInLocalResults(match, out _, out this.torrent))
+                {
                     return;
+                }
                 
                 log.TrySendDocumentBackAsync(this.torrent.Link);
             }
@@ -121,7 +123,7 @@ namespace MediaServer.Workflow
 
                 var downloadLocations = (this.bitTorrentClient.IsSetUp
                     ? this.bitTorrentClient.ListDownloadLocations()
-                    : default) ?? new string[0];
+                    : default) ?? Array.Empty<string>();
 
                 log.ReplyBack(
                     $"¿What to do with torrent #{this.GetResultIndex(this.torrent)} '{this.torrent.Title}'?",
@@ -145,7 +147,8 @@ namespace MediaServer.Workflow
                 if (!this.bitTorrentClient.IsSetUp)
                 {
                     log.ReplyBack(
-                        $"{nameof(this.bitTorrentClient)} is not ste up. The command {nameof(BotCommands.StartTorrent)} cannot be executed.");
+                        $"{nameof(this.bitTorrentClient)} is not set up. "
+                        + $"The command {nameof(BotCommands.StartTorrent)} cannot be executed.");
                     log.LogLastMessage();
                     return;
                 }
@@ -371,7 +374,7 @@ namespace MediaServer.Workflow
 
             TrackerCacheResult[] FilterAndSortResults()
             {
-                Func<TrackerCacheResult, object> sort;
+                Func<TrackerCacheResult, object?> sort;
                 var sortingType = this.viewFilterConfig.SortBy;
                 switch (sortingType)
                 {
@@ -398,7 +401,7 @@ namespace MediaServer.Workflow
                 return query.Skip(resultNumberOnPage * (pageNumber - 1)).Take(resultNumberOnPage).ToArray();
             }
 
-            InlineKeyboardButton PrepareGoToButton(Emoji emoji, int page, params int[] excludePages) =>
+            InlineKeyboardButton? PrepareGoToButton(Emoji emoji, int page, params int[] excludePages) =>
                 page == pageNumber || page <= 0 || page > lasPageNumber || excludePages.Any() && excludePages.Contains(page)
                     ? null
                     : InlineKeyboardButton.WithCallbackData(emoji.ToUnicode(), string.Format(BotCommands.GoToPage.Format, page));
@@ -440,7 +443,7 @@ namespace MediaServer.Workflow
                         
                     });
 
-            string GetReadableSize(long? size) =>
+            string? GetReadableSize(long? size) =>
                 size.HasValue
                     ? ByteSize.FromBytes(size.Value).ToString()
                     : null;

@@ -12,8 +12,7 @@ namespace MediaServer.Contracts
         
         public TelegramBotConfiguration TelegramBot { get; set; }
 
-        [CanBeNull]
-        public BitTorrentClientConfiguration BitTorrent { get; set; }
+        public BitTorrentClientConfiguration? BitTorrent { get; set; }
         
         public ViewFilterConfiguration ViewFilter { get; set; }
     }
