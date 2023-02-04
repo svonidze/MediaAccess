@@ -1,5 +1,6 @@
 namespace MediaAccess.Workflow.Tests
 {
+    using System;
     using System.Linq;
 
     using Common.Collections;
@@ -16,24 +17,39 @@ namespace MediaAccess.Workflow.Tests
         {
         }
 
-        [TestCase("/t", ExpectedResult = "")]
-        [TestCase("/torrent", ExpectedResult = "")]
-        [TestCase("/t request", ExpectedResult = "request")]
-        [TestCase("/torrent request", ExpectedResult = "request")]
-        [TestCase("/t@somebot request", ExpectedResult = "request")]
-        [TestCase("/torrent@somebot request", ExpectedResult = "request")]
-        [TestCase("/t search request", ExpectedResult = "search request")]
-        [TestCase("/torrent search request", ExpectedResult = "search request")]
-        [TestCase("/t@somebot search request", ExpectedResult = "search request")]
-        [TestCase("/torrent@somebot search request", ExpectedResult = "search request")]
-        public string Torrent(string text)
+        [TestCase("/t", ExpectedResult = new string [0])]
+        [TestCase("/torrent", ExpectedResult = new string [0])]
+        [TestCase("/t request", ExpectedResult = new [] { "request"})]
+        [TestCase("/torrent request", ExpectedResult = new [] { "request"})]
+        [TestCase("/t@somebot request", ExpectedResult = new [] { "request"})]
+        [TestCase("/torrent@somebot request", ExpectedResult = new [] { "request"})]
+        [TestCase("/t search request", ExpectedResult = new [] { "search request"})]
+        [TestCase("/torrent search request", ExpectedResult = new [] { "search request"})]
+        [TestCase("/t@somebot search request", ExpectedResult = new [] { "search request"})]
+        [TestCase("/torrent@somebot search request", ExpectedResult = new [] { "search request"})]
+        [TestCase("/t Rutracker: search request", ExpectedResult = new [] { "Rutracker", "search request"})]
+        [TestCase("/t LostFilm.tv: search request", ExpectedResult = new [] { "LostFilm.tv", "search request"})]
+        public string[] Torrent(string text)
         {
             if (!UserCommands.Torrent.Regex.TryMath(text, out var match))
             {
                 Assert.Fail($"Cant parse what you requested {text}");
             }
 
-            return match.Groups[UserCommands.Torrent.Groups.SearchRequest].Value;
+            var input = match.Groups[UserCommands.Torrent.Groups.Input].Value;
+
+            if (!UserCommands.SearchRequest.Regex.TryMath(input, out match))
+            {
+                return Array.Empty<string>();
+            }
+            
+            var searchRequest = match.Groups[UserCommands.SearchRequest.Groups.Input].Value;
+            var trackerName = match.Groups[UserCommands.SearchRequest.Groups.TrackerName].Value;
+            
+            return new[]
+                {
+                    trackerName, searchRequest
+                }.Where(v => !string.IsNullOrWhiteSpace(v)).ToArray();
         }
 
         [TestCase(@"Фильм ""Во все тяжкие"" (""Breaking Bad"", 2008-2013)", ExpectedResult = "Во все тяжкие Breaking Bad 2008 2013")]
@@ -69,6 +85,30 @@ namespace MediaAccess.Workflow.Tests
             string GetValue(string groupName) => match.Groups[groupName].Value;
 
             return GetValue(UserCommands.Film.Groups.Name);
+        }
+        
+        [TestCase(@"http://www.foufos.gr", ExpectedResult = true)]
+        [TestCase(@"https://www.foufos.gr", ExpectedResult = true)]
+        [TestCase(@"http://foufos.gr", ExpectedResult = true)]
+        [TestCase(@"http://www.foufos.gr/kino", ExpectedResult = true)]
+        [TestCase(@"http://werer.gr", ExpectedResult = true)]
+        [TestCase(@"http://t.co", ExpectedResult = true)]
+        [TestCase(@"http://www.t.co", ExpectedResult = true)]
+        [TestCase(@"https://www.t.co", ExpectedResult = true)]
+        [TestCase(@"http://aa.com", ExpectedResult = true)]
+        [TestCase(@"http://www.aa.com", ExpectedResult = true)]
+        [TestCase(@"https://www.aa.com", ExpectedResult = true)]
+        [TestCase(@"www.foufos", ExpectedResult = false)]
+        [TestCase(@"www.foufos-.gr", ExpectedResult = false)]
+        [TestCase(@"www.-foufos.gr", ExpectedResult = false)]
+        [TestCase(@"foufos.gr", ExpectedResult = false)]
+        [TestCase(@"http://www.foufos", ExpectedResult = false)]
+        [TestCase(@"http://foufos", ExpectedResult = false)]
+        [TestCase(@"www.mp3#.com", ExpectedResult = false)]
+        public bool Http(string text)
+        {
+            //https://stackoverflow.com/questions/3809401/what-is-a-good-regular-expression-to-match-a-url
+            return UserCommands.Http.Regex.IsMatch(text);
         }
     }
 }

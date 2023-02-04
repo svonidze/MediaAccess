@@ -19,8 +19,6 @@ namespace MediaServer.Workflow
 
     using Jackett.Contracts;
 
-    using JetBrains.Annotations;
-
     using MediaServer.Contracts;
     using MediaServer.Workflow.Constants;
 
@@ -66,6 +64,7 @@ namespace MediaServer.Workflow
                     { BotCommands.StartTorrent.Regex, StartTorrent },
                     { BotCommands.GoToPage.Regex, GoToPage },
                     { BotCommands.SortResults.Regex, SortResults },
+                    { BotCommands.FilterTrackerResults.Regex, FilterTrackerResults },
                     { BotCommands.DownloadTorrentFile.Regex, DownloadTorrentFile },
                 };
          
@@ -218,12 +217,26 @@ namespace MediaServer.Workflow
 
                 this.ShowResults(log);
             }
-
             
+            void FilterTrackerResults(Match match)
+            {
+                var trackerName = match.Groups[BotCommands.FilterTrackerResults.Groups.TrackerName].Value;
+
+                if (!trackerName.IsNullOrEmpty())
+                {
+                    Console.WriteLine($"Filtering by {trackerName}");
+                    this.viewFilterConfig.TrackerName = trackerName;
+                }
+                
+                this.ShowResults(log);
+            }
+
             foreach (var regex in actions.Keys)
             {
                 if (!regex.TryMath(queryData, out var match))
+                {
                     continue;
+                }
                 
                 actions[regex](match);
                 return;
@@ -244,13 +257,13 @@ namespace MediaServer.Workflow
 
             var actions = new Dictionary<Regex, Action<Match>>
                 {
-                    { UserCommands.StartBotCommunication.Regex, StartBotCommunication },
-                    { UserCommands.Kinopoisk.Regex, Kinopoisk },
-                    { UserCommands.Film.Regex, Film },
-                    { UserCommands.Torrent.Regex, Torrent },
+                    { UserCommands.StartBotCommunication.Regex, HandleStartBotCommunication },
+                    { UserCommands.Kinopoisk.Regex, HandleKinopoisk },
+                    { UserCommands.Film.Regex, HandleFilm },
+                    { UserCommands.Torrent.Regex, HandleTorrent },
                 };
             
-            void StartBotCommunication(Match match)
+            void HandleStartBotCommunication(Match match)
             {
                 log.Text(
                     "Greeting! " + NewLine 
@@ -261,37 +274,52 @@ namespace MediaServer.Workflow
                 log.Log(match.Value);
             }
 
-            void Kinopoisk(Match match)
+            void HandleKinopoisk(Match match)
             {
                 var searchRequest =
                     $"{match.Groups[UserCommands.Kinopoisk.Groups.RusName]} {match.Groups[UserCommands.Kinopoisk.Groups.EngName]}";
-                this.SearchTorrents(searchRequest, log);
+                this.SearchTorrents(log, searchRequest);
             }
 
-            void Film(Match match)
+            void HandleFilm(Match match)
             {
                 var searchRequest = match.Groups[UserCommands.Film.Groups.Name].Value;
-                this.SearchTorrents(searchRequest, log);
+                this.SearchTorrents(log, searchRequest);
             }
-
-            void Torrent(Match match)
+            
+            void StartTorrentSearch(string input)
             {
-                var searchRequest = match.Groups[UserCommands.Torrent.Groups.SearchRequest];
+                if (UserCommands.SearchRequest.Regex.TryMath(input, out var match))
+                {
+                    var searchRequest = match.Groups[UserCommands.SearchRequest.Groups.Input];
+                    var trackerName = match.Groups[UserCommands.SearchRequest.Groups.TrackerName];
+                    this.SearchTorrents(log, searchRequest.Value, trackerName.Value);
+                }
+                else
+                {
+                    this.SearchTorrents(log, input);
+                }
+            }
+            
+            void HandleTorrent(Match match)
+            {
+                var searchRequest = match.Groups[UserCommands.Torrent.Groups.Input];
                 if (searchRequest.Value.IsNullOrEmpty())
                 {
                     this.waitingForUserInput = true;
-                    log.Text($"Send your search request");
+                    log.Text("Send your search request");
                     return;
                 }
 
-                this.SearchTorrents(searchRequest.Value, log);
+                StartTorrentSearch(searchRequest.Value);
             }
-
 
             foreach (var regex in actions.Keys)
             {
                 if (!regex.TryMath(messageText, out var match))
+                {
                     continue;
+                }
                 
                 actions[regex](match);
                 return;
@@ -300,7 +328,7 @@ namespace MediaServer.Workflow
             if (this.waitingForUserInput)
             {
                 this.waitingForUserInput = false;
-                this.SearchTorrents(messageText, log);
+                StartTorrentSearch(messageText);
             }
             else
             {
@@ -311,7 +339,10 @@ namespace MediaServer.Workflow
         
         private int GetResultIndex(TrackerCacheResult t) => this.torrents.Results.IndexOf(t) + 1;
 
-        private void SearchTorrents(string searchRequest, ITelegramClientAndServerLogger log)
+        private void SearchTorrents(
+            ITelegramClientAndServerLogger log,
+            string searchRequest,
+            string? trackerName = null)
         {
             if (searchRequest.IsNullOrEmpty())
             {
@@ -327,10 +358,10 @@ namespace MediaServer.Workflow
             try
             {
                 this.torrents = null;
-                this.torrents = this.jackett.SearchTorrents(searchRequest);
+                this.torrents = this.jackett.SearchTorrents(searchRequest, trackerName);
 
                 log.Log($"Done {action}: " 
-                    + $"Found {this.torrents?.Results?.Count} results from "
+                    + $"Found {this.torrents?.Results.Count} results from "
                     + $"{this.torrents?.Indexers?.Count(i => i.Results > 0)}/{this.torrents?.Indexers?.Count} indexers.");
             }
             catch (Exception exception)
@@ -394,6 +425,11 @@ namespace MediaServer.Workflow
 
                 var query = this.torrents.Results.AsEnumerable();
 
+                if (!this.viewFilterConfig.TrackerName.IsNullOrEmpty())
+                {
+                    query = query.Where(q => q.Tracker == this.viewFilterConfig.TrackerName);
+                }
+                
                 query = this.viewFilterConfig.Ascending
                     ? query.OrderBy(sort)
                     : query.OrderByDescending(sort);
@@ -435,6 +471,10 @@ namespace MediaServer.Workflow
                                 PrepareGoToButton(Emojies.PlayButton, pageNumber + 1, excludePages: new[] { 1, lasPageNumber }),
                                 PrepareGoToButton(Emojies.NextTrackButton, lasPageNumber, excludePages: 1)
                             }.Where(b => b != null),
+                        this.torrents.Indexers.Where(i => i.Results > 0).Select(r => r.Name).Distinct().Select(
+                            t => InlineKeyboardButton.WithCallbackData(
+                                t,
+                                string.Format(BotCommands.FilterTrackerResults.Format, t))),
                         EnumUtils.EnumToList<SortingType>()
                             .Except(SortingType.Default)
                             .Select(st => InlineKeyboardButton.WithCallbackData(
