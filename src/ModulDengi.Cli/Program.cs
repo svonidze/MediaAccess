@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
 
     using CommandLine;
@@ -74,6 +75,12 @@
                     }
                 case ConversionDirectionType.ToZenMoney:
                     {
+                        //TextWriter oldOut = Console.Out;
+                        const string LogFilePath = "./run.log";
+                        using var fileStream = new FileStream(LogFilePath, FileMode.OpenOrCreate, FileAccess.Write);
+                        using var writer = new StreamWriter(fileStream);
+                        Console.SetOut(writer);
+                        
                         foreach (var item in ModulDengiToZenMoneyConverter.ConvertToJsFetchRequest(accountStatements))
                         {
                             Console.WriteLine(item);
