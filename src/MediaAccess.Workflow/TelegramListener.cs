@@ -25,8 +25,7 @@ namespace MediaServer.Workflow
         private readonly ConcurrentHashSet<long> allowedChats;
 
         // TODO make cache expiration
-        private readonly ConcurrentDictionary<long, ITelegramChatListener> chatByListener =
-            new ConcurrentDictionary<long, ITelegramChatListener>();
+        private readonly ConcurrentDictionary<long, ITelegramChatListener> chatByListener = new();
 
         public TelegramListener(
             ITelegramFactory telegramFactory,
@@ -68,14 +67,14 @@ namespace MediaServer.Workflow
         private ITelegramChatListener GetOrAddChatListener(long chatId) =>
             this.chatByListener.GetOrAdd(
                 chatId,
-                ci => this.telegramFactory.CreateChatListener());
+                _ => this.telegramFactory.CreateChatListener());
 
-        private void OnCallbackQuery(object sender, CallbackQueryEventArgs e)
+        private void OnCallbackQuery(object? sender, CallbackQueryEventArgs e)
         {
             this.Handle(e.CallbackQuery.Message, (chatListener, log) => chatListener.Handle(e.CallbackQuery.Data, log));
         }
 
-        private void OnMessage(object sender, MessageEventArgs e)
+        private void OnMessage(object? sender, MessageEventArgs e)
         {
             this.Handle(e.Message, (chatListener, log) => chatListener.Handle(e.Message, log));
         }

@@ -21,7 +21,7 @@ namespace Telegram.BotServer
 
     public static class WindsorInstaller
     {
-        public static IWindsorInstaller Register(Configuration configuration = default) =>
+        public static IWindsorInstaller Register(Configuration? configuration = default) =>
             configuration == default
                 ? new WithNoConfiguration()
                 : new WithConfiguration(configuration);

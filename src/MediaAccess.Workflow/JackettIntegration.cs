@@ -2,8 +2,10 @@ namespace MediaServer.Workflow
 {
     using System;
     using System.Collections.Specialized;
+    using System.Linq;
     using System.Net.Http;
 
+    using Common.Collections;
     using Common.DateTime;
     using Common.Http;
 
@@ -11,6 +13,8 @@ namespace MediaServer.Workflow
 
     public class JackettIntegration : IJackettIntegration
     {
+        private const string UrlFormat = "{0}/api/v2.0/indexers/all/results";
+
         private readonly IJackettAccessConfiguration config;
 
         public JackettIntegration(IJackettAccessConfiguration config)
@@ -18,20 +22,32 @@ namespace MediaServer.Workflow
             this.config = config;
         }
 
-        public ManualSearchResult SearchTorrents(string searchRequest)
+        public ManualSearchResult SearchTorrents(string searchRequest, params string?[] trackerNames)
         {
-            var url = $"{this.config.Url}/api/v2.0/indexers/all/results";
+            var url = string.Format(UrlFormat, this.config.Url);
 
-            // Tracker%5B%5D
+            var queryValues = new NameValueCollection
+                {
+                    { ParameterKeys.ApiKey, this.config.ApiKey },
+                    { ParameterKeys.Query, searchRequest },
+                    { ParameterKeys.Date, DateTime.UtcNow.ToUnixTimestamp().ToString() }
+                };
+            trackerNames
+                .Where(tn => !string.IsNullOrWhiteSpace(tn))
+                .Foreach(tn => queryValues.Add(ParameterKeys.Tracker, tn!.ToLower()));
+            
             var httpBuilder = new HttpRequestBuilder(this.config.Timeout).SetUrl(
                 url,
-                new NameValueCollection
-                    {
-                        { "apikey", this.config.ApiKey },
-                        { "Query", searchRequest },
-                        { "_", DateTime.UtcNow.ToUnixTimestamp().ToString() }
-                    });
+                queryValues);
             return httpBuilder.RequestAndValidate<ManualSearchResult>(HttpMethod.Get);
+        }
+        
+        private static class ParameterKeys
+        {
+            public const string ApiKey = "apikey";
+            public const string Query = "Query";
+            public const string Date = "_";
+            public const string Tracker = "Tracker[]";
         }
     }
 }

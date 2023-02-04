@@ -1,5 +1,6 @@
 namespace MediaAccess.Workflow.Tests
 {
+    using System;
     using System.Linq;
 
     using Common.Collections;
@@ -16,24 +17,39 @@ namespace MediaAccess.Workflow.Tests
         {
         }
 
-        [TestCase("/t", ExpectedResult = "")]
-        [TestCase("/torrent", ExpectedResult = "")]
-        [TestCase("/t request", ExpectedResult = "request")]
-        [TestCase("/torrent request", ExpectedResult = "request")]
-        [TestCase("/t@somebot request", ExpectedResult = "request")]
-        [TestCase("/torrent@somebot request", ExpectedResult = "request")]
-        [TestCase("/t search request", ExpectedResult = "search request")]
-        [TestCase("/torrent search request", ExpectedResult = "search request")]
-        [TestCase("/t@somebot search request", ExpectedResult = "search request")]
-        [TestCase("/torrent@somebot search request", ExpectedResult = "search request")]
-        public string Torrent(string text)
+        [TestCase("/t", ExpectedResult = new string [0])]
+        [TestCase("/torrent", ExpectedResult = new string [0])]
+        [TestCase("/t request", ExpectedResult = new [] { "request"})]
+        [TestCase("/torrent request", ExpectedResult = new [] { "request"})]
+        [TestCase("/t@somebot request", ExpectedResult = new [] { "request"})]
+        [TestCase("/torrent@somebot request", ExpectedResult = new [] { "request"})]
+        [TestCase("/t search request", ExpectedResult = new [] { "search request"})]
+        [TestCase("/torrent search request", ExpectedResult = new [] { "search request"})]
+        [TestCase("/t@somebot search request", ExpectedResult = new [] { "search request"})]
+        [TestCase("/torrent@somebot search request", ExpectedResult = new [] { "search request"})]
+        [TestCase("/t Rutracker: search request", ExpectedResult = new [] { "Rutracker", "search request"})]
+        [TestCase("/t LostFilm.tv: search request", ExpectedResult = new [] { "LostFilm.tv", "search request"})]
+        public string[] Torrent(string text)
         {
             if (!UserCommands.Torrent.Regex.TryMath(text, out var match))
             {
                 Assert.Fail($"Cant parse what you requested {text}");
             }
 
-            return match.Groups[UserCommands.Torrent.Groups.SearchRequest].Value;
+            var input = match.Groups[UserCommands.Torrent.Groups.Input].Value;
+
+            if (!UserCommands.SearchRequest.Regex.TryMath(input, out match))
+            {
+                return Array.Empty<string>();
+            }
+            
+            var searchRequest = match.Groups[UserCommands.SearchRequest.Groups.Input].Value;
+            var trackerName = match.Groups[UserCommands.SearchRequest.Groups.TrackerName].Value;
+            
+            return new[]
+                {
+                    trackerName, searchRequest
+                }.Where(v => !string.IsNullOrWhiteSpace(v)).ToArray();
         }
 
         [TestCase(@"Фильм ""Во все тяжкие"" (""Breaking Bad"", 2008-2013)", ExpectedResult = "Во все тяжкие Breaking Bad 2008 2013")]
