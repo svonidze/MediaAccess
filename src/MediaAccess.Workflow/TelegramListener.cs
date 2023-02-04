@@ -71,19 +71,21 @@ namespace MediaServer.Workflow
 
         private void OnCallbackQuery(object? sender, CallbackQueryEventArgs e)
         {
-            this.Handle(e.CallbackQuery.Message, (chatListener, log) => chatListener.Handle(e.CallbackQuery.Data, log));
+            this.Handle(e.CallbackQuery.Message, (chatListener, log) => chatListener.HandleBotInput(e.CallbackQuery.Data, log));
         }
 
         private void OnMessage(object? sender, MessageEventArgs e)
         {
-            this.Handle(e.Message, (chatListener, log) => chatListener.Handle(e.Message, log));
+            this.Handle(e.Message, (chatListener, log) => chatListener.HandleUserInput(e.Message, log));
         }
 
         private void Handle(Message message, Action<ITelegramChatListener, ITelegramClientAndServerLogger> action)
         {
             var log = this.telegramFactory.CreateClientAndServerLogger(message);
             if (!this.CheckChatIsAllowed(message, log))
+            {
                 return;
+            }
             
             var chatListener = this.GetOrAddChatListener(message.Chat.Id);
             action(chatListener, log);

@@ -14,6 +14,7 @@ namespace MediaServer.Workflow
     using Common.Collections;
     using Common.Cryptography;
     using Common.Exceptions;
+    using Common.Http;
     using Common.Serialization.Json;
     using Common.System;
     using Common.Text;
@@ -57,7 +58,7 @@ namespace MediaServer.Workflow
             this.hashToUrl = new ConcurrentDictionary<string, Uri>();
         }
 
-        public void Handle(string queryData, ITelegramClientAndServerLogger log)
+        public void HandleBotInput(string queryData, ITelegramClientAndServerLogger log)
         {
             var actions = new Dictionary<Regex, Action<Match>>
                 {
@@ -247,7 +248,7 @@ namespace MediaServer.Workflow
             log.Text($"Your action '{queryData}' is not supported. Maybe you click old buttons?");
         }
 
-        public void Handle(Message message, ITelegramClientAndServerLogger log)
+        public void HandleUserInput(Message message, ITelegramClientAndServerLogger log)
         {
             var messageText = message.Text;
             if (messageText == null)
@@ -256,12 +257,18 @@ namespace MediaServer.Workflow
                 return;
             }
 
+            this.HandleUserInput(messageText, log);
+        }
+
+        private void HandleUserInput(string messageText, ITelegramClientAndServerLogger log)
+        {
             var actions = new Dictionary<Regex, Action<Match>>
                 {
                     { UserCommands.StartBotCommunication.Regex, HandleStartBotCommunication },
                     { UserCommands.Kinopoisk.Regex, HandleKinopoisk },
                     { UserCommands.Film.Regex, HandleFilm },
                     { UserCommands.Torrent.Regex, HandleTorrent },
+                    { Patterns.Http.Regex, HandleHttp },
                 };
             
             void HandleStartBotCommunication(Match match)
@@ -280,6 +287,22 @@ namespace MediaServer.Workflow
                 var searchRequest =
                     $"{match.Groups[UserCommands.Kinopoisk.Groups.RusName]} {match.Groups[UserCommands.Kinopoisk.Groups.EngName]}";
                 this.SearchTorrents(log, searchRequest);
+            }
+            
+            void HandleHttp(Match match)
+            {
+                var url = match.Value;
+                var httpRequestBuilder = new HttpRequestBuilder().SetUrl(url);
+                var html = httpRequestBuilder.DownloadString();
+
+                if (!Patterns.Html.TitleRegex.TryMath(html, out var titleMatch))
+                {
+                    log.ReplyBack($"Could not extract {nameof(Patterns.Html)}");
+                    return;
+                }
+
+                var title = match.Groups[Patterns.Html.Groups.Title].Value;
+                this.HandleUserInput(title, log);
             }
 
             void HandleFilm(Match match)
@@ -337,6 +360,7 @@ namespace MediaServer.Workflow
                 log.Log($"said '{messageText}'");
             }
         }
+        
         
         private int GetResultIndex(TrackerCacheResult t) => this.torrents.Results.IndexOf(t) + 1;
 

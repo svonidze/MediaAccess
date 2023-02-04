@@ -45,7 +45,7 @@ namespace MediaAccess.Workflow.Tests
             var chatListener = factory.CreateChatListener();
 
             var log = factory.CreateClientAndServerLogger(message);
-            chatListener.Handle(message, log);
+            chatListener.HandleUserInput(message, log);
         }
 
         private static IWindsorContainer InitializeContainer() =>

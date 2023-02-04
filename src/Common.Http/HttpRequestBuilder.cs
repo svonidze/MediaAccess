@@ -4,6 +4,7 @@ namespace Common.Http
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.IO;
+    using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Text;
@@ -25,8 +26,7 @@ namespace Common.Http
 
         private readonly HttpClient httpClient;
 
-        [CanBeNull]
-        public Uri Uri => this.uriBuilder?.Uri;
+        public Uri Uri => this.uriBuilder.Uri;
 
         private HttpContent httpContent;
 
@@ -45,12 +45,14 @@ namespace Common.Http
             this.httpClient.Timeout = timeout ?? TimeSpan.FromMinutes(2);
         }
 
-        public HttpRequestBuilder SetUrl(string url, NameValueCollection queryValues = null)
+        public HttpRequestBuilder SetUrl(string url, NameValueCollection? queryValues = null)
         {
             this.uriBuilder = new UriBuilder(url);
 
             if (queryValues != null)
+            {
                 this.AddUrlQueryValues(queryValues);
+            }
 
             return this;
         }
@@ -58,7 +60,9 @@ namespace Common.Http
         public HttpRequestBuilder AddUrlQueryValues(NameValueCollection queryValues)
         {
             if (this.uriBuilder == null || queryValues == null)
+            {
                 throw new NotSupportedException();
+            }
 
             var query = HttpUtility.ParseQueryString(this.uriBuilder.Query);
             query.Add(queryValues);
@@ -74,10 +78,12 @@ namespace Common.Http
             return this;
         }
 
-        public HttpRequestBuilder SetCookie(NameValueCollection cookieValues)
+        public HttpRequestBuilder SetCookie(NameValueCollection? cookieValues)
         {
             if (cookieValues == null)
+            {
                 return this;
+            }
 
             var cookies = HttpUtility.ParseQueryString(string.Empty);
             cookies.Add(cookieValues);
@@ -87,8 +93,8 @@ namespace Common.Http
         }
 
         public HttpRequestBuilder SetMultipartFormDataDisposition(
-            Dictionary<string, FileStream> dispositionFiles = null,
-            NameValueCollection dispositionParameters = null)
+            Dictionary<string, FileStream>? dispositionFiles = null,
+            NameValueCollection? dispositionParameters = null)
         {
             var contentContainer = new MultipartFormDataContent();
 
@@ -147,8 +153,14 @@ namespace Common.Http
         {
             this.RequestAndValidate<T>(httpMethod, out var content, ignoreSerializationErrors: true);
 
-            var collectionResponse = JsonConvert.DeserializeObject<T[]>(content);
-            return collectionResponse;
+            return content.FromJsonTo<T[]>();
+        }
+
+        public string DownloadString() 
+        {
+            using var response = this.httpClient.GetAsync(this.Uri);
+            using var content = response.Result.Content;
+            return content.ReadAsStringAsync().Result;
         }
 
         private T RequestAndValidate<T>(

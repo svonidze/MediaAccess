@@ -86,5 +86,29 @@ namespace MediaAccess.Workflow.Tests
 
             return GetValue(UserCommands.Film.Groups.Name);
         }
+        
+        [TestCase(@"http://www.foufos.gr", ExpectedResult = true)]
+        [TestCase(@"https://www.foufos.gr", ExpectedResult = true)]
+        [TestCase(@"http://foufos.gr", ExpectedResult = true)]
+        [TestCase(@"http://www.foufos.gr/kino", ExpectedResult = true)]
+        [TestCase(@"http://werer.gr", ExpectedResult = true)]
+        [TestCase(@"http://t.co", ExpectedResult = true)]
+        [TestCase(@"http://www.t.co", ExpectedResult = true)]
+        [TestCase(@"https://www.t.co", ExpectedResult = true)]
+        [TestCase(@"http://aa.com", ExpectedResult = true)]
+        [TestCase(@"http://www.aa.com", ExpectedResult = true)]
+        [TestCase(@"https://www.aa.com", ExpectedResult = true)]
+        [TestCase(@"www.foufos", ExpectedResult = false)]
+        [TestCase(@"www.foufos-.gr", ExpectedResult = false)]
+        [TestCase(@"www.-foufos.gr", ExpectedResult = false)]
+        [TestCase(@"foufos.gr", ExpectedResult = false)]
+        [TestCase(@"http://www.foufos", ExpectedResult = false)]
+        [TestCase(@"http://foufos", ExpectedResult = false)]
+        [TestCase(@"www.mp3#.com", ExpectedResult = false)]
+        public bool Http(string text)
+        {
+            //https://stackoverflow.com/questions/3809401/what-is-a-good-regular-expression-to-match-a-url
+            return Patterns.Http.Regex.IsMatch(text);
+        }
     }
 }
