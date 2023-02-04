@@ -11,5 +11,8 @@ namespace MediaServer.Contracts
         public string MaxSize { get; set; }
 
         public string MinSize { get; set; }
+        
+        public string? TrackerName { get; set; }
+
     }
 }
