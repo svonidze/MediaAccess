@@ -10,17 +10,31 @@ namespace MediaServer.Workflow.Constants
             {
                 public const string BotName = "botName";
 
-                public const string SearchRequest = "searchRequest";
-
-                public const string Delimiter = "searchRequest";
+                public const string Input = "input";
             }
 
-            public static readonly string[] Commands = {
+            public static readonly string[] Commands =
+                {
                     "/torrent", "/t"
                 };
+
+            public static readonly Regex Regex = new(
+                "/(torrent|t)(?<botName>@\\w+)?\\s*(?<input>.+)?");
+        }
+        
+        public static class SearchRequest
+        {
+            public static class Groups
+            {
+                public const string Input = "input";
+                
+                public const string TrackerName = "trackerName";
+            }
             
-            public static readonly Regex Regex = new Regex(
-                @"/(torrent|t)(?<botName>@\w+)?(?<delimiter>\s+)?(?<searchRequest>.+)?");
+            public static readonly Regex Regex = new(
+                "(?<tracker>(?<trackerName>"
+                + Patterns.TrackerName
+                + "):)?\\s*(?<input>.+)?");
         }
 
         public static class Kinopoisk
@@ -32,11 +46,11 @@ namespace MediaServer.Workflow.Constants
                 public const string EngName = "engName";
 
                 public const string StartYear = "startYear";
-                
+
                 public const string EndYear = "endYear";
             }
 
-            public static readonly Regex Regex = new Regex(
+            public static readonly Regex Regex = new(
                 @"Фильм ""(?<rusName>.+)""\s?\((""(?<engName>.+)"")?,?\s?(?<startYear>\d{4})-?(?<endYear>(\d{4}|\.{3}))?\)");
         }
 
@@ -46,15 +60,15 @@ namespace MediaServer.Workflow.Constants
             {
                 public const string Name = "name";
             }
-            
-            public static readonly Regex Regex = new Regex(@"Фильм (?<name>.+)");
+
+            public static readonly Regex Regex = new(@"Фильм (?<name>.+)");
         }
 
         public static class StartBotCommunication
         {
             public const string Command = @"/start";
 
-            public static readonly Regex Regex = new Regex(Command);
+            public static readonly Regex Regex = new(Command);
         }
     }
 }
