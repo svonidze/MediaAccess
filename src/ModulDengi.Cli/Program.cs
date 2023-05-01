@@ -52,9 +52,11 @@
             DateTime dateSince,
             ModulDengiAccessConfig config)
         {
-            var services = new ServiceCollection().AddOptions().AddSingleton(Options.Create(config))
+            var services = new ServiceCollection()
+                .AddOptions()
+                .AddSingleton(Options.Create(config))
                 .AddTransient<IModulDengiApi, ModulDengiApi>()
-                .AddTransient(provider => new HttpRequestBuilder(enableLogging: true));
+                .AddTransient(_ => new HttpRequestBuilder(enableLogging: true));
 
             var serviceProvider = services.BuildServiceProvider();
 
@@ -77,6 +79,9 @@
                     {
                         //TextWriter oldOut = Console.Out;
                         const string LogFilePath = "./run.log";
+
+                        Console.WriteLine($"Console log will be redirected to file {LogFilePath}");
+                        
                         using var fileStream = new FileStream(LogFilePath, FileMode.OpenOrCreate, FileAccess.Write);
                         using var writer = new StreamWriter(fileStream);
                         Console.SetOut(writer);
