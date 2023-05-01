@@ -57,7 +57,7 @@ namespace MediaServer.Workflow
             this.hashToUrl = new ConcurrentDictionary<string, Uri>();
         }
 
-        public void Handle(string queryData, ITelegramClientAndServerLogger log)
+        public void HandleBotInput(string queryData, ITelegramClientAndServerLogger log)
         {
             var actions = new Dictionary<Regex, Action<Match>>
                 {
@@ -81,13 +81,13 @@ namespace MediaServer.Workflow
                     return false;
                 }
 
-                var torrentCandidates = this.torrents.Results.Where(t => t.Guid == uri).ToArray();
+                var torrentCandidates = this.torrents!.Results.Where(t => t.Guid == uri).ToArray();
                 if (!torrentCandidates.Any())
                 {
                     log.Text("Found no torrents, probably Search results are expired, repeat your search");
                     log.Log(
                         $"Torrent could not be found with URL={uri.LocalPath}, "
-                        + $"last search has {this.torrents?.Results?.Count} results");
+                        + $"last search has {this.torrents?.Results.Count} results");
                     return false;
                 }
 
@@ -98,7 +98,7 @@ namespace MediaServer.Workflow
                         + "probably search results are corrupted, repeat your search");
                     log.Log(
                         $"Found {torrentCandidates.Length} torrents with URL={uri.AbsoluteUri}, "
-                        + $"last search has {this.torrents?.Results?.Count} results");
+                        + $"last search has {this.torrents?.Results.Count} results");
                     return false;
                 }
 
@@ -113,7 +113,7 @@ namespace MediaServer.Workflow
                     return;
                 }
                 
-                log.TrySendDocumentBackAsync(this.torrent.Link);
+                log.TrySendDocumentBackAsync(this.torrent!.Link);
             }
             
             void PickTorrent(Match match)
@@ -126,7 +126,7 @@ namespace MediaServer.Workflow
                     : default) ?? Array.Empty<string>();
 
                 log.ReplyBack(
-                    $"¿What to do with torrent #{this.GetResultIndex(this.torrent)} '{this.torrent.Title}'?",
+                    $"¿What to do with torrent #{this.GetResultIndex(this.torrent!)} '{this.torrent!.Title}'?",
                     new InlineKeyboardMarkup(
                         new[]
                             {
@@ -247,7 +247,7 @@ namespace MediaServer.Workflow
             log.Text($"Your action '{queryData}' is not supported. Maybe you click old buttons?");
         }
 
-        public void Handle(Message message, ITelegramClientAndServerLogger log)
+        public void HandleUserInput(Message message, ITelegramClientAndServerLogger log)
         {
             var messageText = message.Text;
             if (messageText == null)
@@ -338,7 +338,7 @@ namespace MediaServer.Workflow
             }
         }
         
-        private int GetResultIndex(TrackerCacheResult t) => this.torrents.Results.IndexOf(t) + 1;
+        private int GetResultIndex(TrackerCacheResult t) => this.torrents!.Results.IndexOf(t) + 1;
 
         private void SearchTorrents(
             ITelegramClientAndServerLogger log,
@@ -368,7 +368,8 @@ namespace MediaServer.Workflow
 
                 log.Log($"Done {action}: " 
                     + $"Found {this.torrents?.Results.Count} results from "
-                    + $"{this.torrents?.Indexers.Count(i => i.Results > 0)}/{this.torrents?.Indexers?.Count} indexers.");
+                    + $"{this.torrents?.Indexers.Count(i => i.Results > 0)}"
+                    + $"/{this.torrents?.Indexers.Count} indexers.");
             }
             catch (Exception exception)
             {
@@ -396,7 +397,7 @@ namespace MediaServer.Workflow
                         .OrderBy(i => i.Name)
                         .Select(i => $"{i.Name}{(i.Error.IsNullOrEmpty()
                             ? null
-                            : "(Failed)")}")
+                            : " (Error)")}")
                         .JoinToString(", ") 
                     + ". Try to reword your search.");
                 log.LogLastMessage();

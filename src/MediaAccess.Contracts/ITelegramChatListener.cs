@@ -4,8 +4,8 @@ namespace MediaServer.Contracts
 
     public interface ITelegramChatListener
     {
-        void Handle(string queryData, ITelegramClientAndServerLogger log);
+        void HandleBotInput(string queryData, ITelegramClientAndServerLogger log);
 
-        void Handle(Message message, ITelegramClientAndServerLogger log);
+        void HandleUserInput(Message message, ITelegramClientAndServerLogger log);
     }
 }
