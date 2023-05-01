@@ -52,44 +52,37 @@
             DateTime dateSince,
             ModulDengiAccessConfig config)
         {
-            var services = new ServiceCollection().AddOptions().AddSingleton(Options.Create(config))
+            var services = new ServiceCollection()
+                .AddOptions()
+                .AddSingleton(Options.Create(config))
                 .AddTransient<IModulDengiApi, ModulDengiApi>()
-                .AddTransient(provider => new HttpRequestBuilder(enableLogging: true));
+                .AddTransient(_ => new HttpRequestBuilder(enableLogging: true));
 
             var serviceProvider = services.BuildServiceProvider();
-
             var modulDengiApi = serviceProvider.GetService<IModulDengiApi>();
 
-            var accountStatements = modulDengiApi.GetAccountStatements(config.MyCompanyId, dateSince: dateSince);
+            var accountStatements = modulDengiApi.GetAccountStatements(config.MyCompanyId, dateSince: dateSince)
+                .OrderBy(x => x.CreatedAt);
+            var items = conversionDirectionType switch
+                {
+                    ConversionDirectionType.ToElba => ModulDengiToElbaConverter.ConvertToJsFetchRequest(
+                        accountStatements),
+                    ConversionDirectionType.ToZenMoney => ModulDengiToZenMoneyConverter.ConvertToJsFetchRequest(
+                        accountStatements),
+                    _ => throw new NotSupportedException($"{conversionDirectionType}")
+                };
+            
+            //TextWriter oldOut = Console.Out;
+            const string LogFilePath = "./run.log";
 
-            switch (conversionDirectionType)
-            {
-                case ConversionDirectionType.ToElba:
-                    {
-                        foreach (var item in ModulDengiToElbaConverter.ConvertToJsFetchRequest(accountStatements))
-                        {
-                            Console.WriteLine(item);
-                        }
-
-                        break;
-                    }
-                case ConversionDirectionType.ToZenMoney:
-                    {
-                        //TextWriter oldOut = Console.Out;
-                        const string LogFilePath = "./run.log";
-                        using var fileStream = new FileStream(LogFilePath, FileMode.OpenOrCreate, FileAccess.Write);
-                        using var writer = new StreamWriter(fileStream);
-                        Console.SetOut(writer);
+            Console.WriteLine($"Console log will be redirected to file {LogFilePath}");
                         
-                        foreach (var item in ModulDengiToZenMoneyConverter.ConvertToJsFetchRequest(accountStatements))
-                        {
-                            Console.WriteLine(item);
-                        }
-
-                        break;
-                    }
-                default:
-                    throw new NotSupportedException($"{conversionDirectionType}");
+            using var fileStream = new FileStream(LogFilePath, FileMode.Create, FileAccess.Write);
+            using var writer = new StreamWriter(fileStream);
+            Console.SetOut(writer);
+            foreach (var item in items)
+            {
+                Console.WriteLine(item);
             }
         }
 

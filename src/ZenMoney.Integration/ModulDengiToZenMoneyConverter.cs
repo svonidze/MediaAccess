@@ -14,12 +14,11 @@ namespace ZenMoney.Integration
     using ModulDengi.Core;
     using ModulDengi.Integration.Contracts.Responses;
 
-    using ZenMoney.Integration.Contracts;
     using ZenMoney.Integration.Contracts.Types;
 
     public static class ModulDengiToZenMoneyConverter
     {
-        public static IEnumerable<string> ConvertToJsFetchRequest(AccountStatementResponse[] accountStatements)
+        public static IEnumerable<string> ConvertToJsFetchRequest(IEnumerable<AccountStatementResponse> accountStatements)
         {
             var transactions = accountStatements
                 .Select(

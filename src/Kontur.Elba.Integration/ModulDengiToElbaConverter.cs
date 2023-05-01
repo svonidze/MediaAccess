@@ -15,9 +15,9 @@
 
     public static class ModulDengiToElbaConverter
     {
-        private static readonly Regex ExtraWhiteSpacesRegex = new Regex("\\s?\\n?\\s{2,}");
+        private static readonly Regex ExtraWhiteSpacesRegex = new("\\s?\\n?\\s{2,}");
 
-        public static IEnumerable<string> ConvertToJsFetchRequest(AccountStatementResponse[] accountStatements)
+        public static IEnumerable<string> ConvertToJsFetchRequest(IEnumerable<AccountStatementResponse> accountStatements)
         {
             var transactions = accountStatements
                 .Select(
