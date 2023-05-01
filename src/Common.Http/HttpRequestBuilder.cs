@@ -15,18 +15,13 @@ namespace Common.Http
     using Common.Serialization.Json;
     using Common.Text;
 
-    using JetBrains.Annotations;
-
-    using Newtonsoft.Json;
-
     public class HttpRequestBuilder
     {
-        private UriBuilder uriBuilder;
+        public Uri Uri => this.uriBuilder.Uri;
 
         private readonly HttpClient httpClient;
 
-        [CanBeNull]
-        public Uri Uri => this.uriBuilder?.Uri;
+        private UriBuilder uriBuilder;
 
         private HttpContent httpContent;
 
@@ -45,12 +40,14 @@ namespace Common.Http
             this.httpClient.Timeout = timeout ?? TimeSpan.FromMinutes(2);
         }
 
-        public HttpRequestBuilder SetUrl(string url, NameValueCollection queryValues = null)
+        public HttpRequestBuilder SetUrl(string url, NameValueCollection? queryValues = null)
         {
             this.uriBuilder = new UriBuilder(url);
 
             if (queryValues != null)
+            {
                 this.AddUrlQueryValues(queryValues);
+            }
 
             return this;
         }
@@ -74,10 +71,12 @@ namespace Common.Http
             return this;
         }
 
-        public HttpRequestBuilder SetCookie(NameValueCollection cookieValues)
+        public HttpRequestBuilder SetCookie(NameValueCollection? cookieValues)
         {
             if (cookieValues == null)
+            {
                 return this;
+            }
 
             var cookies = HttpUtility.ParseQueryString(string.Empty);
             cookies.Add(cookieValues);
@@ -87,8 +86,8 @@ namespace Common.Http
         }
 
         public HttpRequestBuilder SetMultipartFormDataDisposition(
-            Dictionary<string, FileStream> dispositionFiles = null,
-            NameValueCollection dispositionParameters = null)
+            Dictionary<string, FileStream>? dispositionFiles = null,
+            NameValueCollection? dispositionParameters = null)
         {
             var contentContainer = new MultipartFormDataContent();
 
@@ -142,13 +141,11 @@ namespace Common.Http
             where T : IResponse, new() =>
             this.RequestAndValidate<T>(httpMethod, out _);
 
-        public T[] RequestAndValidateArrayOf<T>(HttpMethod httpMethod)
+        public T[]? RequestAndValidateArrayOf<T>(HttpMethod httpMethod)
             where T : IResponse, new()
         {
             this.RequestAndValidate<T>(httpMethod, out var content, ignoreSerializationErrors: true);
-
-            var collectionResponse = JsonConvert.DeserializeObject<T[]>(content);
-            return collectionResponse;
+            return content.FromJsonTo<T[]>();
         }
 
         private T RequestAndValidate<T>(
@@ -162,9 +159,7 @@ namespace Common.Http
 
             content = responseMessage.Content.ReadAsStringAsync().Result;
 
-            Console.WriteLine(content);
-
-            T response = default;
+            T? response = default;
             if (!content.IsNullOrEmpty())
             {
                 try
@@ -181,26 +176,29 @@ namespace Common.Http
             }
 
             if (response == null)
+            {
                 throw new NotSupportedException();
+            }
 
             bool IsNotEmpty(string input) => !string.IsNullOrWhiteSpace(input);
 
-            if (!responseMessage.IsSuccessStatusCode || IsNotEmpty(response.ErrorCode)
-                || IsNotEmpty(response.ErrorMessage))
+            if (responseMessage.IsSuccessStatusCode && !IsNotEmpty(response.ErrorCode)
+                && !IsNotEmpty(response.ErrorMessage))
             {
-                var messageBuilder = new StringBuilder()
-                    .AppendIf(
-                        !responseMessage.IsSuccessStatusCode,
-                        $"{responseMessage.StatusCode}. Reason: {responseMessage.ReasonPhrase}. ")
-                    .AppendIf(IsNotEmpty(response.ErrorCode), response.ErrorCode + " ")
-                    .AppendIf(IsNotEmpty(response.ErrorMessage), response.ErrorMessage + " ").AppendIf(
-                        !IsNotEmpty(response.ErrorCode + response.ErrorMessage),
-                        content);
-
-                throw new HttpException(responseMessage.StatusCode, messageBuilder.ToString());
+                return response;
             }
+            
+            var messageBuilder = new StringBuilder()
+                .AppendIf(
+                    !responseMessage.IsSuccessStatusCode,
+                    $"{responseMessage.StatusCode}. Reason: {responseMessage.ReasonPhrase}. ")
+                .AppendIf(IsNotEmpty(response.ErrorCode), response.ErrorCode + " ")
+                .AppendIf(IsNotEmpty(response.ErrorMessage), response.ErrorMessage + " ")
+                .AppendIf(
+                    !IsNotEmpty(response.ErrorCode + response.ErrorMessage),
+                    content);
 
-            return response;
+            throw new HttpException(responseMessage.StatusCode, messageBuilder.ToString());
         }
 
         private Task<HttpResponseMessage> SendRequestAsync<T>(HttpMethod httpMethod)
