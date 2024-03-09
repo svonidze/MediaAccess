@@ -1,6 +1,6 @@
-using System;
-using System.Net;
-using System.Text;
+using global::System;
+using global::System.Net;
+using global::System.Text;
 using NUnit.Framework;
 
 namespace Common.Http.Tests
@@ -27,7 +27,7 @@ namespace Common.Http.Tests
             Console.WriteLine($"{encoding}");
 
             var bytes = encoding.GetBytes(sourceString);
-            var encodedBytes = System.Net.WebUtility.UrlEncodeToBytes(bytes, 0, bytes.Length);
+            var encodedBytes = WebUtility.UrlEncodeToBytes(bytes, 0, bytes.Length);
             var encodedString = encoding.GetString(encodedBytes, 0, encodedBytes.Length);
             Console.WriteLine(encodedString);
 

@@ -1,9 +1,9 @@
 namespace Common.Http
 {
-    using System;
-    using System.Net.Http;
-    using System.Threading;
-    using System.Threading.Tasks;
+    using global::System;
+    using global::System.Net.Http;
+    using global::System.Threading;
+    using global::System.Threading.Tasks;
 
     public class LoggingHandler : DelegatingHandler
     {
@@ -18,9 +18,9 @@ namespace Common.Http
         {
             Console.WriteLine("Request:");
             Console.WriteLine(request.ToString());
-            if (request.Content != null && !(request.Content is MultipartFormDataContent))
+            if (request.Content != null && request.Content is not MultipartFormDataContent)
             {
-                Console.WriteLine(await request.Content.ReadAsStringAsync());
+                Console.WriteLine(await request.Content.ReadAsStringAsync(cancellationToken));
             }
 
             Console.WriteLine();
@@ -29,10 +29,10 @@ namespace Common.Http
 
             Console.WriteLine("Response:");
             Console.WriteLine(response.ToString());
-//            if (response.Content != null)
-//            {
-//                Console.WriteLine(await response.Content.ReadAsStringAsync());
-//            }
+            // if (response.Content != null)
+            // {
+            //     Console.WriteLine(await response.Content.ReadAsStringAsync());
+            // }
 
             return response;
         }

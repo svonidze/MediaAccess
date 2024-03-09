@@ -5,7 +5,7 @@
     using System.Collections.Specialized;
     using System.Linq;
 
-    public static partial class EnumerableExtensions 
+    public static partial class EnumerableExtensions
     {
         /// <summary>
         /// Concatenates the members of a constructed System.Collections.Generic.IEnumerable
@@ -19,40 +19,22 @@
         /// string. If values has no members, the method returns System.String.Empty.
         /// </returns>
         /// <exception cref="System.ArgumentNullException">values is null.</exception>
-        public static string JoinToString<T>(this IEnumerable<T> values, string separator)
-        {
-            return string.Join(separator, values);
-        }
+        public static string JoinToString<T>(this IEnumerable<T> values, string separator) =>
+            string.Join(separator, values);
 
-        public static string JoinToString<T>(this IEnumerable<T> values, char separator)
-        {
-            return values.JoinToString(separator.ToString());
-        }
+        public static string JoinToString<T>(this IEnumerable<T> values, char separator) =>
+            values.JoinToString(separator.ToString());
 
-        public static bool IsNullOrEmpty<T>(this IEnumerable<T> collection)
-        {
-            return collection == null || collection.Any() == false;
-        }
+        public static bool IsNullOrEmpty<T>(this IEnumerable<T>? collection) =>
+            collection == null || collection.Any() == false;
 
-        public static bool IsNotEmpty<T>(this IEnumerable<T> collection)
-        {
-            return collection?.Any() == true;
-        }
+        public static bool IsNotEmpty<T>(this IEnumerable<T>? collection) => collection?.Any() == true;
 
-        public static HashSet<T> ToHashSet<T>(this IEnumerable<T> enumerable)
-        {
-            return new HashSet<T>(enumerable);
-        }
-        
-        public static ConcurrentHashSet<T> ToConcurrentHashSet<T>(this IEnumerable<T> enumerable)
-        {
-            return new ConcurrentHashSet<T>(enumerable);
-        }
+        public static HashSet<T> ToHashSet<T>(this IEnumerable<T> enumerable) => new(enumerable);
 
-        public static Queue<T> ToQueue<T>(this IEnumerable<T> enumerable)
-        {
-            return new Queue<T>(enumerable);
-        }
+        public static ConcurrentHashSet<T> ToConcurrentHashSet<T>(this IEnumerable<T> enumerable) => new(enumerable);
+
+        public static Queue<T> ToQueue<T>(this IEnumerable<T> enumerable) => new(enumerable);
 
         public static NameValueCollection ToNameValueCollection<T>(
             this IEnumerable<T> enumerable,
@@ -90,11 +72,9 @@
             }
         }
 
-        public static IEnumerable<T> Except<T>(this IEnumerable<T> first, params T[] second)
-        {
+        public static IEnumerable<T> Except<T>(this IEnumerable<T> first, params T[] second) =>
             // StackOverflow while using .Except(second);
-            return first.Where(f => !second.Contains(f)); 
-        }
+            first.Where(f => !second.Contains(f));
 
         public static void Foreach<T>(this IEnumerable<T> enumerable, Action<T> action)
         {
@@ -136,15 +116,15 @@
 
         public static IEnumerable<TSource> ThrowIfEmpty<TException, TSource>(
             this IEnumerable<TSource> enumerable,
-            string message) 
+            string message)
             where TException : Exception, new()
         {
             return enumerable.DoIfEmpty(() => { throw CreateTypedException<TException>(message); });
         }
-        
+
         public static IEnumerable<TSource> DoIfEmpty<TSource>(
             this IEnumerable<TSource> enumerable,
-            Func<TSource> action) 
+            Func<TSource> action)
         {
             if (!enumerable.Any())
             {
@@ -157,6 +137,7 @@
         #endregion
 
         #region MoreThanOne
+
         public static IEnumerable<TSource> ThrowIfMoreThanOne<TSource>(
             this IEnumerable<TSource> enumerable,
             string message,
@@ -181,8 +162,7 @@
 
             if (itemsDescriptionSelector != null)
             {
-                itemsDescription = ". Items Dump: " +
-                    enumerable.Select(itemsDescriptionSelector).JoinToString("; ");
+                itemsDescription = ". Items Dump: " + enumerable.Select(itemsDescriptionSelector).JoinToString("; ");
             }
 
             return enumerable.ThrowIfMoreThanOne(() => new Exception(message + itemsDescription));
@@ -224,9 +204,11 @@
 
             return enumerable;
         }
+
         #endregion
 
         #region Any
+
         //TODO wrap all these copy-pasted methods with similar logic to more elegant solution
         public static IEnumerable<TSource> ThrowIfAny<TSource>(
             this IEnumerable<TSource> enumerable,
@@ -265,9 +247,7 @@
             return enumerable.DoIfAny(() => { throw createExceptionToBeThrown(); });
         }
 
-        public static IEnumerable<TSource> DoIfAny<TSource>(
-            this IEnumerable<TSource> enumerable,
-            Func<TSource> action)
+        public static IEnumerable<TSource> DoIfAny<TSource>(this IEnumerable<TSource> enumerable, Func<TSource> action)
         {
             if (enumerable.Any())
             {
@@ -276,6 +256,7 @@
 
             return enumerable;
         }
+
         #endregion
 
         private static string GetItemsDescription<TSource>(IEnumerable<TSource> enumerable, string itemsDescription)
@@ -284,7 +265,8 @@
             return itemsDescription;
         }
 
-        private static TException CreateTypedException<TException>(string message) where TException : Exception, new()
+        private static TException CreateTypedException<TException>(string message)
+            where TException : Exception, new()
         {
             try
             {
