@@ -1,17 +1,14 @@
 namespace Common.Http
 {
-    using System;
-    using System.Collections.Specialized;
-    using System.Linq;
-
     using Common.Collections;
 
-    using JetBrains.Annotations;
+    using global::System;
+    using global::System.Collections.Specialized;
+    using global::System.Linq;
 
     public static class ContentDisposition
     {
-        [CanBeNull]
-        public static NameValueCollection Parse(string contentDisposition)
+        public static NameValueCollection? Parse(string contentDisposition)
         {
             if (string.IsNullOrEmpty(contentDisposition))
                 return null;

@@ -1,19 +1,19 @@
 namespace Common.Http
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Collections.Specialized;
-    using System.IO;
-    using System.Net.Http;
-    using System.Net.Http.Headers;
-    using System.Text;
-    using System.Threading.Tasks;
-    using System.Web;
-
     using Common.Exceptions;
     using Common.Http.Contracts;
     using Common.Serialization.Json;
     using Common.Text;
+
+    using global::System;
+    using global::System.Collections.Generic;
+    using global::System.Collections.Specialized;
+    using global::System.IO;
+    using global::System.Net.Http;
+    using global::System.Net.Http.Headers;
+    using global::System.Text;
+    using global::System.Threading.Tasks;
+    using global::System.Web;
 
     public class HttpRequestBuilder
     {
@@ -147,6 +147,10 @@ namespace Common.Http
             this.RequestAndValidate<T>(httpMethod, out var content, ignoreSerializationErrors: true);
             return content.FromJsonTo<T[]>();
         }
+
+        public Task<Stream> GetStreamAsync() => this.httpClient.GetStreamAsync(this.uriBuilder.Uri);
+        
+        public Task<string> GetStringAsync() => this.httpClient.GetStringAsync(this.uriBuilder.Uri);
 
         private T RequestAndValidate<T>(
             HttpMethod httpMethod,
