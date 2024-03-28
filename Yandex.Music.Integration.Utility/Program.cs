@@ -6,7 +6,7 @@ using Common.Serialization.Json;
 
 using Yandex.Music.Integration.Utility;
 
-var playlistIds = new Dictionary<int,string>
+var allPlaylistIds = new Dictionary<int,string>
     {
         { 1040, "rock.post" },
         { 1044, "hip-hop" },
@@ -15,12 +15,43 @@ var playlistIds = new Dictionary<int,string>
         { 1037, "rock.indie" },
         { 1042, "hip-hop.lyrics" },
         { 1015, "rock.russian" },
+        /*
+           "1004": "детский.сказка",
+           "1005": "strange",
+           "1006": "rock.vocal",
+           "1007": "dub & drum",
+           "1009": "beat",
+           "1010": "rock.indie.sad",
+           "1013": "rap.best",
+           "1014": "relax",
+           "1015": "rock.russian",
+           "1016": "word",
+           "1020": "детский",
+           "1025": "russian",
+           "1027": "jazz.modern",
+           "1029": "electronic",
+           "1031": "rock.classic",
+           "1034": "rock.russian.soft",
+           "1035": "rock.dance",
+           "1037": "rock.indie",
+           "1038": "jazz",
+           "1039": "rock.soft",
+           "1040": "rock.post",
+           "1042": "hip-hop lyrics",
+           "1043": "speeches from movies",
+           "1044": "hip-hop",
+           "1047": "в дорогу",
+           "3": "Мне нравится"
+         */
     };
 
-var yandex = new YandexMusicIntegrator(stagingDirectoryPath: Path.GetTempPath());
+var yandex = new YandexMusicIntegrator(stagingDirectoryPath: "/home/sergey/Music/playlists");
 
 //var playlistFiles = await yandex.DownloadMissingPlaylists(playlistIds.Keys).ToListAsync();
-var playlistFiles = await yandex.DownloadMissingPlaylists(Enumerable.Range(1000, 50)).ToListAsync();
+var playlistIds = Enumerable.Range(1000, 50).ToList();
+playlistIds.Add(3);
+var playlistFiles = await yandex
+    .DownloadMissingPlaylists(playlistIds: playlistIds, forceReProcessing: true).ToListAsync();
 
 Console.WriteLine(playlistFiles.JoinToString(Environment.NewLine));
 
@@ -30,20 +61,29 @@ class YandexMusicIntegrator
     // https://music.yandex.ru/users/kirichenkov.sa/playlists/1040
     private const string UrlFormat = "https://music.yandex.ru/handlers/playlist.jsx?owner=kirichenkov.sa&kinds={0}";
 
+    private const string SongNameFormat = "{0} - {1}";
+    
+    private const string SongNameDelimiter = " - ";
+
     private readonly string stagingDirectoryPath;
 
     public YandexMusicIntegrator(string stagingDirectoryPath)
     {
         this.stagingDirectoryPath = stagingDirectoryPath;
     }
-    
-    public async IAsyncEnumerable<string> DownloadMissingPlaylists(IEnumerable<int> playlistIds)
+
+    public async IAsyncEnumerable<string> DownloadMissingPlaylists(
+        IEnumerable<int> playlistIds,
+        bool forceReDownloading = false,
+        bool forceReProcessing = false)
     {
+        var existingPlaylists = new Dictionary<int, string>();
+        
         foreach (var playlistId in playlistIds)
         {
             var fileName = $"yandex-{playlistId}";
             var exportFilePath = Path.Combine(this.stagingDirectoryPath, $"{fileName}.json");
-            if (!File.Exists(exportFilePath))
+            if (forceReDownloading || !File.Exists(exportFilePath))
             {
                 Console.WriteLine($"File {exportFilePath} does not exist, downloading");
                 var downloadResult = await Download(string.Format(UrlFormat, playlistId), exportFilePath);
@@ -53,18 +93,19 @@ class YandexMusicIntegrator
                     continue;
                 }
             }
-
-            var convertResult = this.ConvertPlaylistToTextFile(exportFilePath);
+            
+            var convertResult = ConvertPlaylistToTextFile(exportFilePath);
             if (convertResult.IsLeft)
             {
                 Console.WriteLine(convertResult.Left!.GetShortDescription());
                 continue;
             }
-
+            
             var playlist = convertResult.Right!;
+            existingPlaylists.Add(playlistId, playlist.Title);
 
             var importFilePath = Path.Combine(this.stagingDirectoryPath, $"{fileName}.{playlist.Title}.txt");
-            if (File.Exists(importFilePath))
+            if (!forceReProcessing && File.Exists(importFilePath))
             {
                 Console.WriteLine($"File '{importFilePath}' exists");
                 continue;
@@ -72,17 +113,24 @@ class YandexMusicIntegrator
 
             Console.WriteLine($"Writing {playlist.TrackCount} tracks to '{importFilePath}'");
 
-            await using var fileStream = File.Open(importFilePath, FileMode.OpenOrCreate);
+            await using var fileStream = File.Open(importFilePath, FileMode.Create);
             await using var writer = new StreamWriter(fileStream);
 
             foreach (var track in playlist.Tracks)
             {
-                var line = $"{track.Artists.Select(a => a.Name).JoinToString(",")} - {track.Title}";
+                var artists = track.Artists.Select(a => a.Name).JoinToString(",");
+                var trackTitle = track.Title;
+                var line = string.Format(
+                    SongNameFormat,
+                    WrapFields(artists),
+                    WrapFields(trackTitle));
                 await writer.WriteLineAsync(line);
             }
 
             yield return importFilePath;
         }
+
+        Console.WriteLine(existingPlaylists.ToJsonIndented());
     }
 
     private static async Task<EitherExceptionOr<string>> Download(string url, string filePath)
@@ -102,17 +150,31 @@ class YandexMusicIntegrator
         }
     }
 
-    private EitherExceptionOr<Playlist> ConvertPlaylistToTextFile(string jsonFilePath)
+    private static EitherExceptionOr<Playlist> ConvertPlaylistToTextFile(string jsonFilePath)
     {
         if (!File.Exists(jsonFilePath))
         {
             return new EitherExceptionOr<Playlist>(new FileNotFoundException(jsonFilePath));
         }
 
+        Console.WriteLine($"Reading {jsonFilePath}");
         using var streamReader = File.OpenText(jsonFilePath);
-        var playlist = streamReader.FromJsonTo<Root>()?.Playlist;
+        Playlist? playlist;
+        try
+        {
+            playlist = streamReader.FromJsonTo<Root>()?.Playlist;
+        }
+        catch (Exception e)
+        {
+            return new EitherExceptionOr<Playlist>(e);
+        }
         return playlist is null
             ? new EitherExceptionOr<Playlist>(new NullReferenceException(nameof(playlist)))
             : new EitherExceptionOr<Playlist>(playlist);
     }
+
+    private static string WrapFields(string input) =>
+        input.Contains(SongNameDelimiter)
+            ? $"\"{input}\""
+            : input;
 }
