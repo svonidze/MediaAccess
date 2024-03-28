@@ -8,8 +8,11 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Common.Collections\Common.Collections.csproj" />
+      <ProjectReference Include="..\Common.Exceptions\Common.Exceptions.csproj" />
+      <ProjectReference Include="..\Common.Http\Common.Http.csproj" />
       <ProjectReference Include="..\Common.Monads\Common.Monads.csproj" />
-      <ProjectReference Include="..\src\Common.Http\Common.Http.csproj" />
+      <ProjectReference Include="..\Common.Serialization.Json\Common.Serialization.Json.csproj" />
     </ItemGroup>
 
     <ItemGroup>
