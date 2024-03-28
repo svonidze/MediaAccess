@@ -16,8 +16,20 @@ namespace ZenMoney.Integration
 
     using ZenMoney.Integration.Contracts.Types;
 
-    public static class ModulDengiToZenMoneyConverter
+    public static class ZenMoneyConverter
     {
+        private static readonly Dictionary<string,object> Headers = new()
+            {
+                { "accept", "*/*" },
+                { "accept-language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7" },
+                { "content-type", "application/x-www-form-urlencoded" },
+                { "sec-ch-ua", "\"Google Chrome\";v=\"87\", \" Not;A Brand\";v=\"99\", \"Chromium\";v=\"87\"" },
+                { "sec-ch-ua-mobile", "?0" },
+                { "sec-fetch-dest", "empty" },
+                { "sec-fetch-mode", "cors" },
+                { "sec-fetch-site", "same-origin" },
+                { "x-requested-with", "XMLHttpRequest" },
+            };
         public static IEnumerable<string> ConvertToJsFetchRequest(IEnumerable<AccountStatementResponse> accountStatements)
         {
             var transactions = accountStatements
@@ -114,32 +126,15 @@ namespace ZenMoney.Integration
 
             foreach (var transaction in transactions)
             {
-                yield return WrapToFetch(
-                    new[]
-                        {
-                            transaction
-                        });
+                yield return WrapToFetch(transaction);
             }
         }
 
-        private static string WrapToFetch(Transaction[] transactions)
+        private static string WrapToFetch(params Transaction[] transactions)
         {
-            var headers = new Dictionary<string, object>
-                {
-                    { "accept", "*/*" },
-                    { "accept-language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7" },
-                    { "content-type", "application/x-www-form-urlencoded" },
-                    { "sec-ch-ua", "\"Google Chrome\";v=\"87\", \" Not;A Brand\";v=\"99\", \"Chromium\";v=\"87\"" },
-                    { "sec-ch-ua-mobile", "?0" },
-                    { "sec-fetch-dest", "empty" },
-                    { "sec-fetch-mode", "cors" },
-                    { "sec-fetch-site", "same-origin" },
-                    { "x-requested-with", "XMLHttpRequest" },
-                };
-
             var parameters = new Dictionary<string, object>
                 {
-                    { "headers", headers },
+                    { "headers", Headers },
                     { "referrer", $"{Constants.ZenmoneyUrl}/a/" },
                     { "referrerPolicy", "strict-origin-when-cross-origin" },
                     { "body", transactions.ToJson() },

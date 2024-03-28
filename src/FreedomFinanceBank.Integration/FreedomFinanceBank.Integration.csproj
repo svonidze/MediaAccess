@@ -2,17 +2,18 @@
 
     <PropertyGroup>
         <TargetFramework>net7.0</TargetFramework>
-        <LangVersion>default</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <LangVersion>default</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+      <PackageReference Include="EPPlus" Version="4.5.3.3" />
+      <PackageReference Include="Spire.PDF" Version="10.3.16" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Common.Results\Common.Results.csproj" />
-      <ProjectReference Include="..\Common.Http.Contracts\Common.Http.Contracts.csproj" />
+      <ProjectReference Include="..\Common.Collections\Common.Collections.csproj" />
       <ProjectReference Include="..\Common.Serialization.Json\Common.Serialization.Json.csproj" />
     </ItemGroup>
 

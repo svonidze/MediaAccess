@@ -8,6 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\FreedomFinanceBank.Integration\FreedomFinanceBank.Integration.csproj" />
       <ProjectReference Include="..\Kontur.Elba.Integration\Kontur.Elba.Integration.csproj" />
       <ProjectReference Include="..\ModulDengi.Contracts\ModulDengi.Contracts.csproj" />
       <ProjectReference Include="..\ModulDengi.Integration.Contracts\ModulDengi.Integration.Contracts.csproj" />
@@ -16,9 +17,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="CommandLineParser" Version="2.8.0" />
-      <PackageReference Include="Microsoft.Extensions.Configuration" Version="3.1.18" />
-      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.8" />
+      <PackageReference Include="CommandLineParser" Version="2.9.1" />
+      <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
     </ItemGroup>
 
 </Project>
