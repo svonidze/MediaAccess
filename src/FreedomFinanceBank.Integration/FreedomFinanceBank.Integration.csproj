@@ -9,12 +9,12 @@
 
     <ItemGroup>
       <PackageReference Include="EPPlus" Version="4.5.3.3" />
-      <PackageReference Include="Spire.PDF" Version="10.3.16" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\Common.Collections\Common.Collections.csproj" />
       <ProjectReference Include="..\Common.Serialization.Json\Common.Serialization.Json.csproj" />
+      <ProjectReference Include="..\FreedomFinanceBank.Contracts\FreedomFinanceBank.Contracts.csproj" />
     </ItemGroup>
 
 </Project>
