@@ -28,6 +28,12 @@ namespace ZenMoney.Integration
             public const string МодульДеньгиRub = "4162463";
 
             public const string Долг = "4161152";
+
+            public static class FreedomFinanceBank
+            {
+                public const string Eur = "11009254";
+                public const string Usd = "11082421";
+            }
         }
     }
 }

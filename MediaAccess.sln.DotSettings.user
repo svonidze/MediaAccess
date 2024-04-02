@@ -4,4 +4,6 @@
     &lt;TestId&gt;NUnit3x::5053EF9F-2E40-4A7F-839D-D618E086D7A3::net7.0::FreedomFinanceBank.Integration.Tests.TransactionConverterTests&lt;/TestId&gt;
   &lt;/TestAncestor&gt;
 &lt;/SessionState&gt;</s:String>
+	<s:Boolean x:Key="/Default/ResxEditorPersonal/CheckedGroups/=Common_002FCommon_002ESpreadsheets_002FProperties_002FResources/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/ResxEditorPersonal/Initialized/@EntryValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=jackett/@EntryIndexedValue">True</s:Boolean></wpf:ResourceDictionary>

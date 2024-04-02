@@ -1,45 +1,89 @@
 ﻿namespace FreedomFinanceBank.Integration;
 
-using Common.Serialization.Json;
+using Common.Collections;
+using Common.Spreadsheets.Enum;
+using Common.Spreadsheets.Excel.EPPlus;
 
 using FreedomFinanceBank.Contracts;
 
-using OfficeOpenXml;
-
 public class Worker
 {
-    private static readonly int[] AllowedColumns =
-        {
-            10 // J
-        };
-
-    public void Do(string excelPath)
+    public static IEnumerable<Transaction> Extract(string fileName)
     {
-        //var pdfPath = @"/home/sergey/Desktop/legal_statement_2024-01-01_2024-12-31_1711645429.pdf";
-        var lines = ReadLines(excelPath);
+        using var fileStream = File.OpenRead(fileName);
+        using var reader = new SpreadsheetReader(fileStream);
+        var sheet = reader.Read().AllowVerboseException().Single();
 
-        //Console.WriteLine(lines.JoinToString(Environment.NewLine));
-
-        foreach (var line in lines)
+        foreach (var row in sheet.Cells.GroupBy(c => c.Row))
         {
-            Console.WriteLine(
-                TransactionConverter.TryConvert(line, out Transaction? transaction)
-                    ? transaction?.ToJson()
-                    : $"Cant convert {line}");
+            if (row.Key < 3) continue;
+
+            var rowCells = row.Where(c => c.Column <= SpreadsheetColumns.J).GroupBy(r => r.Column).ToDictionary(
+                r => r.Key,
+                r => r.Single().Text);
+            var keepWorking = TryExtract(rowCells, out var transaction);
+            if (!keepWorking)
+            {
+                yield break;
+            }
+
+            if (transaction is not null)
+            {
+                yield return transaction;
+            }
         }
     }
 
-    private static IEnumerable<string> ReadLines(string excelFileName)
+    private static bool TryExtract(
+        IReadOnlyDictionary<SpreadsheetColumns, string> rowCells,
+        out Transaction? transaction)
     {
-        using var excelStream = File.OpenRead(excelFileName);
-        using var excel = new ExcelPackage(excelStream);
-        Console.WriteLine($"Total pages: {excel.Workbook.Worksheets.Count}");
-        foreach (var worksheet in excel.Workbook.Worksheets)
-        foreach (var cell in worksheet.Cells)
+        var textA = rowCells[SpreadsheetColumns.A];
+        if (textA == "Итого:")
         {
-            if (!AllowedColumns.Contains(cell.Start.Column)) continue;
-
-            yield return cell.Text.Trim();
+            transaction = null;
+            return false;
         }
+
+        DateTime? operationDate = null;
+        string? payee;
+
+        var textJ = rowCells[SpreadsheetColumns.J].Trim();
+        if (textJ is "Безвозмездный перевод" or "MATERIAL AID")
+        {
+            payee = rowCells[SpreadsheetColumns.E];
+        }
+        else if (!TransactionConverter.TryExtract(textJ, out payee, out operationDate))
+        {
+            Console.WriteLine($"Cannot parse '{textJ}'");
+            transaction = null;
+            return true;
+        }
+
+        // the dates in Column A and in Description might be different
+        operationDate ??= TransactionConverter.ConvertDate(textA);
+
+        transaction = new Transaction
+            {
+                CreatedAt = operationDate.Value,
+                Payee = payee
+            };
+
+        if (TransactionConverter.TryConvert(rowCells[SpreadsheetColumns.H], out decimal amount))
+        {
+            transaction.Amount = -amount;
+        }
+        else if (TransactionConverter.TryConvert(rowCells[SpreadsheetColumns.I], out amount))
+        {
+            transaction.Amount = amount;
+        }
+
+        var textG = rowCells[SpreadsheetColumns.G];
+        if (TransactionConverter.TryExtractCurrency(textG, out var currency) && currency is not null)
+        {
+            transaction.Currency = currency;
+        }
+
+        return true;
     }
 }

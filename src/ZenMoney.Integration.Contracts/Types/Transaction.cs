@@ -14,10 +14,10 @@
         public string Date { get; set; }
 
         [JsonProperty("comment")]
-        public string Comment { get; set; }
+        public string? Comment { get; set; }
 
         [JsonProperty("payee")]
-        public string Payee { get; set; }
+        public string? Payee { get; set; }
 
         [JsonProperty("outcome")]
         public string Outcome { get; set; }

@@ -14,6 +14,8 @@
     <ItemGroup>
       <ProjectReference Include="..\Common.Collections\Common.Collections.csproj" />
       <ProjectReference Include="..\Common.Serialization.Json\Common.Serialization.Json.csproj" />
+      <ProjectReference Include="..\Common.Spreadsheets.Excel.EPPlus\Common.Spreadsheets.Excel.EPPlus.csproj" />
+      <ProjectReference Include="..\Common.Spreadsheets\Common.Spreadsheets.csproj" />
       <ProjectReference Include="..\FreedomFinanceBank.Contracts\FreedomFinanceBank.Contracts.csproj" />
     </ItemGroup>
 

@@ -11,15 +11,53 @@ public abstract class TransactionConverter
 
     private const string TargetSeparator = @"\";
 
+    private static readonly Regex CurrencyRegex = new("(\\p{L}{3})$");
+    
     private static readonly Regex TransactionRegex = new(
         "Дата\\s?транзакции:\\s(?<date>\\d{2}\\.\\d{2}\\.\\d{4}).+"
-        + "Сумма\\s?транзакции:\\s?(?<amount>\\d+(\\.\\d{1,2})?)\\s?(?<currency>\\w{3})\\s?"
+        + "Сумма\\s?транзакции:\\s?(?<amount>\\d*(\\.\\d{1,2})?)\\s?(?<currency>\\w{3})\\s?"
         + "Операция:\\s?(Покупка|Возврат)(?<target>.+)?" + "Учетный\\s?курс");
 
-    public static bool TryConvert(string line, out Transaction? transaction)
+    public static bool TryExtractCurrency(string accountNumber, out string? currency)
     {
-        line = line.Replace("\n", "");
-        var match = TransactionRegex.Match(line);
+        var match = CurrencyRegex.Match(accountNumber);
+        if (!match.Success)
+        {
+            currency = null;
+            return false;
+        }
+
+        currency = match.Value;
+        return true;
+    }
+    
+    public static bool TryExtract(string input, out string? payee, out DateTime? date)
+    {
+        input = input.Replace("\n", "");
+        var match = TransactionRegex.Match(input);
+        if (!match.Success)
+        {
+            payee = null;
+            date = null;
+            return false;
+        }
+
+        payee = GetValue("target");
+        payee = payee.Contains(TargetSeparator)
+            ? payee.Split(TargetSeparator).LastOrDefault()?.Trim()
+            : null;
+
+        date = ConvertDate(GetValue("date"));
+
+        return true;
+        
+        string GetValue(string groupName) => match.Groups[groupName].Value;
+    }
+    
+    public static bool TryConvert(string input, out Transaction? transaction)
+    {
+        input = input.Replace("\n", "");
+        var match = TransactionRegex.Match(input);
         if (!match.Success)
         {
             transaction = null;
@@ -33,9 +71,10 @@ public abstract class TransactionConverter
         transaction = new Transaction
             {
                 Currency = GetValue("currency"),
+                // TODO respect negative amount
                 Amount = ConvertDecimal(GetValue("amount")),
-                Date = ConvertDate(GetValue("date")),
-                Target = target,
+                CreatedAt = ConvertDate(GetValue("date")),
+                Payee = target,
             };
         return true;
         string GetValue(string groupName) => match.Groups[groupName].Value;

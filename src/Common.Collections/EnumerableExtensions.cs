@@ -1,9 +1,9 @@
 ﻿namespace Common.Collections
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Collections.Specialized;
-    using System.Linq;
+    using global::System;
+    using global::System.Collections.Generic;
+    using global::System.Collections.Specialized;
+    using global::System.Linq;
 
     public static partial class EnumerableExtensions
     {
@@ -18,7 +18,7 @@
         /// A string that consists of the members of values delimited by the separator
         /// string. If values has no members, the method returns System.String.Empty.
         /// </returns>
-        /// <exception cref="System.ArgumentNullException">values is null.</exception>
+        /// <exception cref="ArgumentNullException">values is null.</exception>
         public static string JoinToString<T>(this IEnumerable<T> values, string separator) =>
             string.Join(separator, values);
 
