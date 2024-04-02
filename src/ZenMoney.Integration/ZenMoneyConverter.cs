@@ -18,6 +18,8 @@ namespace ZenMoney.Integration
 
     public static class ZenMoneyConverter
     {
+        private const string DateFormat = "dd.MM.yyyy";
+
         private static readonly Dictionary<string,object> Headers = new()
             {
                 { "accept", "*/*" },
@@ -30,9 +32,18 @@ namespace ZenMoney.Integration
                 { "sec-fetch-site", "same-origin" },
                 { "x-requested-with", "XMLHttpRequest" },
             };
-        public static IEnumerable<string> ConvertToJsFetchRequest(IEnumerable<AccountStatementResponse> accountStatements)
-        {
-            var transactions = accountStatements
+
+        public static IEnumerable<string> ConvertToJsFetchRequest(
+            IEnumerable<AccountStatementResponse> accountStatements) =>
+            ConvertToTransactions(accountStatements).Select(transaction => WrapToFetch(transaction));
+        
+        public static IEnumerable<string> ConvertToJsFetchRequest(
+            IEnumerable<FreedomFinanceBank.Contracts.Transaction> transactions) =>
+            ConvertToTransactions(transactions).Select(transaction => WrapToFetch(transaction));
+
+        private static IEnumerable<Transaction> ConvertToTransactions(
+            IEnumerable<AccountStatementResponse> accountStatements) =>
+            accountStatements
                 .Select(
                     statement => new
                         {
@@ -42,94 +53,122 @@ namespace ZenMoney.Integration
                 .Where(pair => !Constants.IgnoringAccountStatementType.Contains(pair.StatementType))
                 .Select(
                     pair =>
-                    {
-                        var statement = pair.statement;
-                        var description = DescriptionExtractor.Extract(statement.Description);
-                        if (description.BorrowerName == null)
                         {
-                            throw new NotSupportedException(
-                                $"{nameof(Description.BorrowerName)} must be provided for {statement.Type}");
-                        }
-
-                        var comment = new StringBuilder().Append($"{statement.Title}: проект {description.ProjectId}")
-                            .AppendIf(description.TimePeriodInDays.HasValue, $" срок {description.TimePeriodInDays} д.")
-                            .AppendIf(description.Percent.HasValue, $" под {description.Percent}%");
-
-                        var transaction = new Transaction
+                            var statement = pair.statement;
+                            var description = DescriptionExtractor.Extract(statement.Description);
+                            if (description.BorrowerName == null)
                             {
-                                Category = Constants.ZeroValue,
-                                Comment = comment.ToString(),
-                                Date = statement.CreatedAt.ToString("dd.MM.yyyy"),
-                                Payee = description.BorrowerName.Replace("\"", null)
-                            };
+                                throw new NotSupportedException(
+                                    $"{nameof(Description.BorrowerName)} must be provided for {statement.Type}");
+                            }
 
-                        string GetFormattedAmount() =>
-                            Math.Abs(statement.Amount).ToString(CultureInfo.InvariantCulture);
+                            var comment = new StringBuilder().Append($"{statement.Title}: проект {description.ProjectId}")
+                                .AppendIf(description.TimePeriodInDays.HasValue, $" срок {description.TimePeriodInDays} д.")
+                                .AppendIf(description.Percent.HasValue, $" под {description.Percent}%");
 
-                        var statementType = statement.Type.StringToEnum<AccountStatementType>();
-                        switch (statementType)
-                        {
-                            case AccountStatementType.RefundMain:
-                                if (statement.Amount < 0)
+                            var transaction = new Transaction
                                 {
-                                    throw new NotSupportedException(
-                                        $"Not expected that Amount is negative: {new { statement.Amount, statement.Type }.ToJson()}");
-                                }
+                                    Category = Constants.ZeroValue,
+                                    Comment = comment.ToString(),
+                                    Date = statement.CreatedAt.ToString(DateFormat),
+                                    Payee = description.BorrowerName.Replace("\"", null)
+                                };
 
-                                transaction.AccountIncome = Constants.Wallets.МодульДеньгиRub;
-                                transaction.AccountOutcome = Constants.Wallets.Долг;
-                                transaction.Outcome = transaction.Income = GetFormattedAmount();
-                                return transaction;
-                            case AccountStatementType.Fund:
-                                if (statement.Amount > 0)
-                                {
-                                    throw new NotSupportedException(
-                                        $"Not expected that Amount is positive: {new { statement.Amount, statement.Type }.ToJson()}");
-                                }
-
-                                transaction.AccountIncome = Constants.Wallets.Долг;
-                                transaction.AccountOutcome = Constants.Wallets.МодульДеньгиRub;
-                                transaction.Outcome = transaction.Income = GetFormattedAmount();
-                                return transaction;
-                            case AccountStatementType.CessionCommission:
-                                transaction.TagGroups = new[]
+                            var statementType = statement.Type.StringToEnum<AccountStatementType>();
+                            switch (statementType)
+                            {
+                                case AccountStatementType.RefundMain:
+                                    if (statement.Amount < 0)
                                     {
-                                        Constants.Categories.Комиссия
-                                    };
-                                break;
-                            case AccountStatementType.RefundPercentage:
-                            case AccountStatementType.RefundPenaltyPercentage:
-                                transaction.TagGroups = new[]
+                                        throw new NotSupportedException(
+                                            $"Not expected that Amount is negative: {new { statement.Amount, statement.Type }.ToJson()}");
+                                    }
+
+                                    transaction.AccountIncome = Constants.Wallets.МодульДеньгиRub;
+                                    transaction.AccountOutcome = Constants.Wallets.Долг;
+                                    transaction.Outcome = transaction.Income = GetFormattedAmount(statement.Amount);
+                                    return transaction;
+                                case AccountStatementType.Fund:
+                                    if (statement.Amount > 0)
                                     {
-                                        Constants.Categories.ДолгПроценты
-                                    };
-                                break;
-                            default:
-                                throw new NotSupportedException(statement.Type);
-                        }
+                                        throw new NotSupportedException(
+                                            $"Not expected that Amount is positive: {new { statement.Amount, statement.Type }.ToJson()}");
+                                    }
 
-                        transaction.AccountIncome = transaction.AccountOutcome = Constants.Wallets.МодульДеньгиRub;
+                                    transaction.AccountIncome = Constants.Wallets.Долг;
+                                    transaction.AccountOutcome = Constants.Wallets.МодульДеньгиRub;
+                                    transaction.Outcome = transaction.Income = GetFormattedAmount(statement.Amount);
+                                    return transaction;
+                                case AccountStatementType.CessionCommission:
+                                    transaction.TagGroups = new[]
+                                        {
+                                            Constants.Categories.Комиссия
+                                        };
+                                    break;
+                                case AccountStatementType.RefundPercentage:
+                                case AccountStatementType.RefundPenaltyPercentage:
+                                    transaction.TagGroups = new[]
+                                        {
+                                            Constants.Categories.ДолгПроценты
+                                        };
+                                    break;
+                                default:
+                                    throw new NotSupportedException(statement.Type);
+                            }
 
-                        if (statement.Amount < 0)
-                        {
-                            transaction.Outcome = GetFormattedAmount();
-                            transaction.Income = Constants.ZeroValue;
-                        }
-                        else
-                        {
-                            transaction.Income = GetFormattedAmount();
-                            transaction.Outcome = Constants.ZeroValue;
-                        }
+                            transaction.AccountIncome = transaction.AccountOutcome = Constants.Wallets.МодульДеньгиRub;
 
-                        return transaction;
-                    }).ToArray();
+                            if (statement.Amount < 0)
+                            {
+                                transaction.Outcome = GetFormattedAmount(statement.Amount);
+                                transaction.Income = Constants.ZeroValue;
+                            }
+                            else
+                            {
+                                transaction.Income = GetFormattedAmount(statement.Amount);
+                                transaction.Outcome = Constants.ZeroValue;
+                            }
 
-            foreach (var transaction in transactions)
+                            return transaction;
+                        });
+
+        private static IEnumerable<Transaction> ConvertToTransactions(
+            IEnumerable<FreedomFinanceBank.Contracts.Transaction> transactions)
+        {
+            foreach (var sourceTransaction in transactions)
             {
-                yield return WrapToFetch(transaction);
+                var transaction = new Transaction
+                    {
+                        Category = Constants.ZeroValue,
+                        Comment = null,
+                        Date = sourceTransaction.CreatedAt.ToString(DateFormat),
+                        Payee = sourceTransaction.Payee,
+                    };
+                var account = sourceTransaction.Currency switch
+                    {
+                        "EUR" => Constants.Wallets.FreedomFinanceBank.Eur,
+                        "USD" => Constants.Wallets.FreedomFinanceBank.Usd,
+                        _ => throw new NotSupportedException(sourceTransaction.Currency)
+                    };
+
+                var amount = GetFormattedAmount(sourceTransaction.Amount);
+                if (sourceTransaction.Amount < 0)
+                {
+                    transaction.Income = Constants.ZeroValue;
+                    transaction.Outcome = amount;
+                    transaction.AccountOutcome = account;
+                }
+                else
+                {
+                    transaction.Income = amount;
+                    transaction.Outcome = Constants.ZeroValue;
+                    transaction.AccountIncome = account;
+                }
+                
+                yield return transaction;
             }
         }
-
+        
         private static string WrapToFetch(params Transaction[] transactions)
         {
             var parameters = new Dictionary<string, object>
@@ -142,7 +181,13 @@ namespace ZenMoney.Integration
                     { "mode", "cors" },
                     { "credentials", "include" },
                 };
-            return $"fetch(\"{Constants.ZenmoneyApiUrl}\", {parameters.ToJsonIndented()});";
+            return $"await fetch(\"{Constants.ZenmoneyApiUrl}\", {parameters.ToJsonIndented()});";
         }
+        
+        private static string GetFormattedAmount(double value) =>
+            Math.Abs(value).ToString(CultureInfo.InvariantCulture);
+        
+        private static string GetFormattedAmount(decimal value) =>
+            Math.Abs(value).ToString(CultureInfo.InvariantCulture);
     }
 }

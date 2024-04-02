@@ -9,6 +9,7 @@
     <ItemGroup>
       <ProjectReference Include="..\Common.Serialization.Json\Common.Serialization.Json.csproj" />
       <ProjectReference Include="..\Common.Text\Common.Text.csproj" />
+      <ProjectReference Include="..\FreedomFinanceBank.Contracts\FreedomFinanceBank.Contracts.csproj" />
       <ProjectReference Include="..\ModulDengi.Contracts\ModulDengi.Contracts.csproj" />
       <ProjectReference Include="..\ModulDengi.Core\ModulDengi.Core.csproj" />
       <ProjectReference Include="..\ModulDengi.Integration.Contracts\ModulDengi.Integration.Contracts.csproj" />

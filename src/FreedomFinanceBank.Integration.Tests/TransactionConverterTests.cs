@@ -9,9 +9,14 @@ public class TransactionConverterTests
     [TestCaseSource(nameof(TestCases))]
     public bool Test(string input, Transaction? expectedTransaction)
     {
-        var result = TransactionConverter.TryConvert(input, out Transaction? transaction);
+        var result = TransactionConverter.TryExtract(
+            input,
+            out var payee,
+            out var date,
+            out var amount,
+            out var currency);
 
-        if (transaction is null && expectedTransaction is null)
+        if (expectedTransaction is null)
         {
             return result;
         }
@@ -19,10 +24,10 @@ public class TransactionConverterTests
         Assert.Multiple(
             () =>
                 {
-                    Assert.That(transaction?.Amount, Is.EqualTo(expectedTransaction?.Amount));
-                    Assert.That(transaction?.Currency, Is.EqualTo(expectedTransaction?.Currency));
-                    Assert.That(transaction?.Date, Is.EqualTo(expectedTransaction?.Date));
-                    Assert.That(transaction?.Target, Is.EqualTo(expectedTransaction?.Target));
+                    Assert.That(amount, Is.EqualTo(expectedTransaction?.Amount));
+                    Assert.That(currency, Is.EqualTo(expectedTransaction?.Currency));
+                    Assert.That(date, Is.EqualTo(expectedTransaction?.CreatedAt));
+                    Assert.That(payee, Is.EqualTo(expectedTransaction?.Payee));
                 });
         return result;
     }
@@ -30,7 +35,7 @@ public class TransactionConverterTests
     public static IEnumerable TestCases()
     {
         yield return new TestCaseData("4700 Безвозмездный перевод", null).Returns(false);
-        
+
         yield return new TestCaseData(
             "Дата транзакции: 30.12.2023 Код авторизации: 001026 Номер карты: 5269********5327 Сумма транзакции:\n"
             + "27.98 EUR Операция: Покупка с нашей карты в чужом устройстве 045875630\\KAZ\\VALENCIA \\0517-\n"
@@ -39,10 +44,10 @@ public class TransactionConverterTests
                 {
                     Amount = 27.98m,
                     Currency = "EUR",
-                    Date = TransactionConverter.ConvertDate("30.12.2023"),
-                    Target = "0517-SUP.EX.RAMON LLUL"
+                    CreatedAt = TransactionConverter.ConvertDate("30.12.2023"),
+                    Payee = "0517-SUP.EX.RAMON LLUL"
                 }).Returns(true);
-        
+
         yield return new TestCaseData(
             "Дата транзакции: 13.01.2024 Код авторизации: 002879 Номер карты: 5269********5327 "
             + "Сумма транзакции: 44.1 EUR Операция: " + "Покупка с нашей карты в чужом устройстве Учетный курс 451.33",
@@ -50,8 +55,8 @@ public class TransactionConverterTests
                 {
                     Amount = 44.1m,
                     Currency = "EUR",
-                    Date = TransactionConverter.ConvertDate("13.01.2024"),
-                    Target = null
+                    CreatedAt = TransactionConverter.ConvertDate("13.01.2024"),
+                    Payee = null
                 }).Returns(true);
 
         yield return new TestCaseData(
@@ -63,10 +68,10 @@ public class TransactionConverterTests
                 {
                     Amount = 8m,
                     Currency = "EUR",
-                    Date = TransactionConverter.ConvertDate("11.01.2024"),
-                    Target = "TEZENIS JUAN AUSTRIA T"
+                    CreatedAt = TransactionConverter.ConvertDate("11.01.2024"),
+                    Payee = "TEZENIS JUAN AUSTRIA T"
                 }).Returns(true);
-        
+
         yield return new TestCaseData(
             "Дата транзакции: 01.01.2024 Код авторизации: 214193 Номер карты: 5269********5327 Сумма транзакции:\n"
             + "461.07 EUR Операция: Покупка с нашей карты в чужом устройстве IBA000000003979\\ARE\\BAKI\\AZAL Учетный\n"
@@ -75,10 +80,21 @@ public class TransactionConverterTests
                 {
                     Amount = 461.07m,
                     Currency = "EUR",
-                    Date = TransactionConverter.ConvertDate("01.01.2024"),
-                    Target = "AZAL"
+                    CreatedAt = TransactionConverter.ConvertDate("01.01.2024"),
+                    Payee = "AZAL"
                 }).Returns(true);
 
+        yield return new TestCaseData(
+            "Дата транзакции: 07.02.2024 Код авторизации: 918427 Номер карты: 5269********5327 Сумма транзакции: .49 EUR "
+            + "Операция: Покупка с нашей карты в чужом устройстве 244559000156182\\ARE\\amazon.es/prm\\Amazon Prime*XI4 "
+            + "Учетный курс 450.34",
+            new Transaction
+                {
+                    Amount = 0.49m,
+                    Currency = "EUR",
+                    CreatedAt = TransactionConverter.ConvertDate("07.02.2024"),
+                    Payee = "Amazon Prime*XI4"
+                }).Returns(true).SetName("Amount .49 without 0");
     }
 }
 

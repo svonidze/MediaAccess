@@ -3,45 +3,66 @@ namespace FreedomFinanceBank.Integration;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
-using FreedomFinanceBank.Contracts;
-
 public abstract class TransactionConverter
 {
     private const string DateFormat = "dd.MM.yyyy";
 
-    private const string TargetSeparator = @"\";
+    private const string PayeeSeparator = @"\";
+
+    private static readonly Regex CurrencyRegex = new("(\\p{L}{3})$");
 
     private static readonly Regex TransactionRegex = new(
         "Дата\\s?транзакции:\\s(?<date>\\d{2}\\.\\d{2}\\.\\d{4}).+"
-        + "Сумма\\s?транзакции:\\s?(?<amount>\\d+(\\.\\d{1,2})?)\\s?(?<currency>\\w{3})\\s?"
-        + "Операция:\\s?(Покупка|Возврат)(?<target>.+)?" + "Учетный\\s?курс");
+        + "Сумма\\s?транзакции:\\s?(?<amount>\\d*(\\.\\d{1,2})?)\\s?(?<currency>\\w{3})\\s?"
+        + "Операция:\\s?(Покупка|Возврат)(?<payee>.+)?" + "Учетный\\s?курс");
 
-    public static bool TryConvert(string line, out Transaction? transaction)
+    public static bool TryExtractCurrency(string accountNumber, out string? currency)
     {
-        line = line.Replace("\n", "");
-        var match = TransactionRegex.Match(line);
+        var match = CurrencyRegex.Match(accountNumber);
         if (!match.Success)
         {
-            transaction = null;
+            currency = null;
             return false;
         }
 
-        var target = GetValue("target");
-        target = target.Contains(TargetSeparator)
-            ? target.Split(TargetSeparator).LastOrDefault()?.Trim()
-            : null;
-        transaction = new Transaction
-            {
-                Currency = GetValue("currency"),
-                Amount = ConvertDecimal(GetValue("amount")),
-                Date = ConvertDate(GetValue("date")),
-                Target = target,
-            };
+        currency = match.Value;
         return true;
+    }
+
+    public static bool TryExtract(
+        string input,
+        out string? payee,
+        out DateTime? createdAt,
+        out decimal? amount,
+        out string? currency)
+    {
+        input = input.Replace("\n", "");
+        var match = TransactionRegex.Match(input);
+        if (!match.Success)
+        {
+            payee = null;
+            createdAt = null;
+            amount = null;
+            currency = null;
+            return false;
+        }
+
+        payee = GetValue("payee");
+        payee = payee.Contains(PayeeSeparator)
+            ? payee.Split(PayeeSeparator).LastOrDefault()?.Trim()
+            : null;
+
+        createdAt = ConvertDate(GetValue("date"));
+
+        amount = ConvertDecimal(GetValue("amount"));
+        currency = GetValue("currency");
+
+        return true;
+
         string GetValue(string groupName) => match.Groups[groupName].Value;
     }
 
-    public static bool TryConvert(string input, out DateTime date) =>
+    private static bool TryConvert(string input, out DateTime date) =>
         DateTime.TryParseExact(input, DateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out date);
 
     public static bool TryConvert(string input, out decimal value) =>
@@ -57,7 +78,7 @@ public abstract class TransactionConverter
         return date;
     }
 
-    public static decimal ConvertDecimal(string input)
+    private static decimal ConvertDecimal(string input)
     {
         if (!TryConvert(input, out decimal value))
         {

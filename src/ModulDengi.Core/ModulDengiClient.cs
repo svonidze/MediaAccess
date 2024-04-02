@@ -24,7 +24,7 @@ namespace ModulDengi.Core
             this.accessConfig = accessConfig.Value;
         }
 
-        public bool IsApiAvailable(out string reason)
+        public bool IsApiAvailable(out string? reason)
         {
             var sitesToCheck = new []
                 {

@@ -12,6 +12,6 @@ namespace ModulDengi.Contracts
 
         Result ConfirmInvestment(string investmentId, string confirmationCode);
 
-        bool IsApiAvailable(out string reason);
+        bool IsApiAvailable(out string? reason);
     }
 }

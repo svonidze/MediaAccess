@@ -1,9 +1,9 @@
 ﻿namespace Common.Collections
 {
-    using System.Collections;
-    using System.Collections.Concurrent;
-    using System.Collections.Generic;
-    using System.Linq;
+    using global::System.Collections;
+    using global::System.Collections.Concurrent;
+    using global::System.Collections.Generic;
+    using global::System.Linq;
 
     public class ConcurrentHashSet<T> : IEnumerable<T>
     {

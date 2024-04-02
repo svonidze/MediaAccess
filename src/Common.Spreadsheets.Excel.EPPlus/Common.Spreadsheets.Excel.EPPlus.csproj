@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Common.Collections\Common.Collections.csproj" />
+      <ProjectReference Include="..\Common.Spreadsheets\Common.Spreadsheets.csproj" />
+      <ProjectReference Include="..\Common.System\Common.System.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="EPPlus" Version="4.5.3.3" />
+    </ItemGroup>
+
+</Project>

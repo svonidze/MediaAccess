@@ -5,3 +5,4 @@ obj/
 /.run/
 
 appsettings.Development.json
+.suo

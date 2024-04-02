@@ -122,13 +122,34 @@
                             }
                     };
         }
-
+        
+        /// <summary>
+        /// 1 download PDF statement from FFIN mobile application
+        /// 2 convert the PDF to XLSX https://www.adobe.com/acrobat/online/pdf-to-excel.html
+        /// </summary>
+        /// <param name="parameters"></param>
+        /// <param name="serviceProvider"></param>
+        /// <param name="serviceCollection"></param>
+        /// <exception cref="NotSupportedException"></exception>
         private static void HandleFreedomFinanceBank(
             FreedomFinanceBankParameters parameters,
             Lazy<ServiceProvider> serviceProvider,
             IServiceCollection serviceCollection)
         {
-            new Worker().Do(parameters.InputFilePath);
+            switch (parameters.ConvertTo)
+            {
+                case DataSourceType.ZenMoney:
+                    var transactions = Worker.Extract(parameters.InputFilePath).ToArray();
+
+                    foreach (var item in ZenMoneyConverter.ConvertToJsFetchRequest(transactions))
+                    {
+                        Console.WriteLine(item);
+                    }
+                    break;
+                default:
+                    throw new NotSupportedException($"{nameof(HandleFreedomFinanceBank)} {parameters.ConvertTo}");
+            }
+            
         }
     }
 }
