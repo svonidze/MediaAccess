@@ -140,7 +140,7 @@ namespace ZenMoney.Integration
                 var transaction = new Transaction
                     {
                         Category = Constants.ZeroValue,
-                        Comment = null,
+                        Comment = sourceTransaction.Description,
                         Date = sourceTransaction.CreatedAt.ToString(DateFormat),
                         Payee = sourceTransaction.Payee,
                     };

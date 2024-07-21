@@ -6,7 +6,7 @@ using Common.Spreadsheets.Excel.EPPlus;
 
 using FreedomFinanceBank.Contracts;
 
-public class Worker
+public static class Worker
 {
     public static IEnumerable<Transaction> Extract(string fileName)
     {
@@ -46,16 +46,21 @@ public class Worker
         }
 
         DateTime? operationDate = null;
-        string? payee;
+        string? payee, description = null;
 
         var textJ = rowCells[SpreadsheetColumns.J].Trim();
-        if (textJ is "Безвозмездный перевод" or "MATERIAL AID")
+        if (textJ is "Безвозмездный перевод" or "MATERIAL AID" or "МАТЕРИАЛЬНАЯ ПОМОЩЬ")
         {
             payee = rowCells[SpreadsheetColumns.E];
         }
+        else if (textJ.StartsWith("Выплата процентов по вкладу"))
+        {
+            payee = "Freedom Finance";
+            description = textJ;
+        }
         else if (!TransactionConverter.TryExtract(textJ, out payee, out operationDate, out _, out _))
         {
-            Console.WriteLine($"Cannot parse '{textJ}'");
+            Console.WriteLine($@"Cannot parse '{textJ}'");
             transaction = null;
             return true;
         }
@@ -66,7 +71,8 @@ public class Worker
         transaction = new Transaction
             {
                 CreatedAt = operationDate.Value,
-                Payee = payee
+                Payee = payee,
+                Description = description
             };
 
         if (TransactionConverter.TryConvert(rowCells[SpreadsheetColumns.H], out decimal amount))

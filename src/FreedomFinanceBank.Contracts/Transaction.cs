@@ -9,4 +9,6 @@ public class Transaction
     public string Currency { get; set; }
 
     public string? Payee { get; set; }
+    
+    public string? Description { get; set; }
 }
