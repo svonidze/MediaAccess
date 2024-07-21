@@ -6,8 +6,12 @@ using Common.Spreadsheets.Excel.EPPlus;
 
 using FreedomFinanceBank.Contracts;
 
-public class Worker
+public static class Worker
 {
+    private const int FirstRow = 3;
+
+    private const SpreadsheetColumns LastColumn = SpreadsheetColumns.Z;
+
     public static IEnumerable<Transaction> Extract(string fileName)
     {
         using var fileStream = File.OpenRead(fileName);
@@ -16,11 +20,12 @@ public class Worker
 
         foreach (var row in sheet.Cells.GroupBy(c => c.Row))
         {
-            if (row.Key < 3) continue;
+            if (row.Key <= FirstRow) continue;
 
-            var rowCells = row.Where(c => c.Column <= SpreadsheetColumns.J).GroupBy(r => r.Column).ToDictionary(
-                r => r.Key,
-                r => r.Single().Text);
+            var rowCells = row
+                .Where(c => c.Column <= LastColumn)
+                .GroupBy(r => r.Column)
+                .ToDictionary(r => r.Key, r => r.Single().Text);
             var keepWorking = TryExtract(rowCells, out var transaction);
             if (!keepWorking)
             {
@@ -46,16 +51,21 @@ public class Worker
         }
 
         DateTime? operationDate = null;
-        string? payee;
+        string? payee, description = null;
 
         var textJ = rowCells[SpreadsheetColumns.J].Trim();
-        if (textJ is "Безвозмездный перевод" or "MATERIAL AID")
+        if (textJ is "Безвозмездный перевод" or "MATERIAL AID" or "МАТЕРИАЛЬНАЯ ПОМОЩЬ")
         {
-            payee = rowCells[SpreadsheetColumns.E];
+            payee = rowCells[SpreadsheetColumns.F];
+        }
+        else if (textJ.StartsWith("Выплата процентов по вкладу"))
+        {
+            payee = "Freedom Finance";
+            description = textJ;
         }
         else if (!TransactionConverter.TryExtract(textJ, out payee, out operationDate, out _, out _))
         {
-            Console.WriteLine($"Cannot parse '{textJ}'");
+            Console.WriteLine($@"Cannot parse '{textJ}'");
             transaction = null;
             return true;
         }
@@ -66,7 +76,8 @@ public class Worker
         transaction = new Transaction
             {
                 CreatedAt = operationDate.Value,
-                Payee = payee
+                Payee = payee,
+                Description = description
             };
 
         if (TransactionConverter.TryConvert(rowCells[SpreadsheetColumns.H], out decimal amount))

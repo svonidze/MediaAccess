@@ -37,7 +37,7 @@
             //TextWriter oldOut = Console.Out;
             const string LogFilePath = "./run.log";
 
-            Console.WriteLine($"Console log will be redirected to file {LogFilePath}");
+            Console.WriteLine($@"Console log will be redirected to file {LogFilePath}");
 
             using var fileStream = new FileStream(LogFilePath, FileMode.Create, FileAccess.Write);
             using var writer = new StreamWriter(fileStream);
@@ -125,7 +125,8 @@
         
         /// <summary>
         /// 1 download PDF statement from FFIN mobile application
-        /// 2 convert the PDF to XLSX https://www.adobe.com/acrobat/online/pdf-to-excel.html
+        /// 2 convert the PDF to XLSX
+        /// open https://www.adobe.com/acrobat/online/pdf-to-excel.html in a browser with the incognito mode
         /// </summary>
         /// <param name="parameters"></param>
         /// <param name="serviceProvider"></param>
