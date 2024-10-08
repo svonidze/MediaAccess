@@ -50,20 +50,26 @@ public static class Worker
             return false;
         }
 
-        DateTime? operationDate = null;
-        string? payee, description = null;
+        DateTime? operationDateFromText = null;
+        string? payeeFromText, descriptionFromText = null, currencyFromText = null;
+        decimal? amountFromText = null;
 
         var textJ = rowCells[SpreadsheetColumns.J].Trim();
         if (textJ is "Безвозмездный перевод" or "MATERIAL AID" or "МАТЕРИАЛЬНАЯ ПОМОЩЬ")
         {
-            payee = rowCells[SpreadsheetColumns.F];
+            payeeFromText = rowCells[SpreadsheetColumns.F];
         }
         else if (textJ.StartsWith("Выплата процентов по вкладу"))
         {
-            payee = "Freedom Finance";
-            description = textJ;
+            payeeFromText = "Freedom Finance";
+            descriptionFromText = textJ;
         }
-        else if (!TransactionConverter.TryExtract(textJ, out payee, out operationDate, out _, out _))
+        else if (!TransactionConverter.TryExtract(
+                     textJ,
+                     out payeeFromText,
+                     out operationDateFromText,
+                     out amountFromText,
+                     out currencyFromText))
         {
             Console.WriteLine($@"Cannot parse '{textJ}'");
             transaction = null;
@@ -71,16 +77,16 @@ public static class Worker
         }
 
         // the dates in Column A and in Description might be different
-        operationDate ??= TransactionConverter.ConvertDate(textA);
+        operationDateFromText ??= TransactionConverter.ConvertDate(textA);
 
         transaction = new Transaction
             {
-                CreatedAt = operationDate.Value,
-                Payee = payee,
-                Description = description
+                CreatedAt = operationDateFromText.Value,
+                Payee = payeeFromText,
+                Description = descriptionFromText
             };
 
-        if (TransactionConverter.TryConvert(rowCells[SpreadsheetColumns.H], out decimal amount))
+        if (TransactionConverter.TryConvert(rowCells[SpreadsheetColumns.H], out var amount))
         {
             transaction.Amount = -amount;
         }
@@ -93,6 +99,12 @@ public static class Worker
         if (TransactionConverter.TryExtractCurrency(textG, out var currency) && currency is not null)
         {
             transaction.Currency = currency;
+        }
+
+        if (transaction.Description == null
+            && (transaction.Amount != amountFromText || transaction.Currency != currencyFromText))
+        {
+            transaction.Description = $"{amountFromText} {currencyFromText}";
         }
 
         return true;
