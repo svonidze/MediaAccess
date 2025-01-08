@@ -493,7 +493,7 @@ namespace MediaServer.Workflow
             {
                 var collection = new NameValueCollection
                     {
-                        { "All", string.Empty }
+                        { "All", "All" }
                     };
                 trackers.Select(r => r.Name).Distinct().Foreach(t => collection.Add(t, t));
 

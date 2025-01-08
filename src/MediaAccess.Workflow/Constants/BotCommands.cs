@@ -66,7 +66,7 @@ namespace MediaServer.Workflow.Constants
 
         public static class FilterTrackerResults
         {
-            public const string Format = "Filter by tracker {0}";
+            public const string Format = "Filter by tracker '{0}'";
 
             public static readonly Regex Regex = new(string.Format(Format, $@"(?<trackerName>{Patterns.TrackerName})"));
 
