@@ -15,7 +15,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Common.Text\Common.Text.csproj"/>
+        <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Text\Common.Text.csproj" />
         <ProjectReference Include="..\MediaAccess.Workflow\MediaAccess.Workflow.csproj"/>
     </ItemGroup>
 

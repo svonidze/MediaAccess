@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Common.Http.Contracts\Common.Http.Contracts.csproj" />
+      <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Http.Contracts\Common.Http.Contracts.csproj" />
     </ItemGroup>
 
 </Project>

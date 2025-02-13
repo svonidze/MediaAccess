@@ -14,8 +14,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\src\Common.Exceptions\Common.Exceptions.csproj" />
-      <ProjectReference Include="..\..\src\Common.System\Common.System.csproj" />
+      <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Exceptions\Common.Exceptions.csproj" />
+      <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.System\Common.System.csproj" />
     </ItemGroup>
 
 </Project>

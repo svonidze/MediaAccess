@@ -7,16 +7,17 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Common.Results\Common.Results.csproj" />
-      <ProjectReference Include="..\ModulDengi.Contracts\ModulDengi.Contracts.csproj" />
-      <ProjectReference Include="..\Common.Exceptions\Common.Exceptions.csproj" />
-      <ProjectReference Include="..\Common.Http\Common.Http.csproj" />
-      <ProjectReference Include="..\MediaAccess.Contracts\MediaAccess.Contracts.csproj" />
-      <ProjectReference Include="..\ModulDengi.Integration.Contracts\ModulDengi.Integration.Contracts.csproj" />
+        <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Http\Common.Http.csproj"/>
+        <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Results\Common.Results.csproj"/>
+        <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Exceptions\Common.Exceptions.csproj"/>
+        <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Http\Common.Http.csproj"/>
+        <ProjectReference Include="..\ModulDengi.Contracts\ModulDengi.Contracts.csproj"/>
+        <ProjectReference Include="..\MediaAccess.Contracts\MediaAccess.Contracts.csproj"/>
+        <ProjectReference Include="..\ModulDengi.Integration.Contracts\ModulDengi.Integration.Contracts.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.2"/>
     </ItemGroup>
 
 </Project>

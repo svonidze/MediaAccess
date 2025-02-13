@@ -5,7 +5,6 @@ namespace ModulDengi.Integration
     using System.Net;
     using System.Net.Http;
 
-    using Common.Exceptions;
     using Common.Http;
 
     using Microsoft.Extensions.Options;
@@ -32,7 +31,7 @@ namespace ModulDengi.Integration
         public CompanyResponse[] MyCompanies() =>
             this.AuthAndRun(
                 "/api/companies",
-                httpBuilder => httpBuilder.RequestAndValidateArrayOf<CompanyResponse>(HttpMethod.Get));
+                httpBuilder => httpBuilder.RequestAndValidate<CompanyResponse[]>(HttpMethod.Get));
 
         public BalanceResponse GetBalance(string myCompanyId) =>
             this.AuthAndRun(
@@ -47,12 +46,12 @@ namespace ModulDengi.Integration
                             {
                                 { "companyId", myCompanyId }
                             })
-                    .RequestAndValidateArrayOf<InvestmentDoneResponse>(HttpMethod.Get));
+                    .RequestAndValidate<InvestmentDoneResponse[]>(HttpMethod.Get));
 
         public InvestmentPendingResponse[] GetProjectsRisingFunds() =>
             this.AuthAndRun(
                 "/api/projects/rising-funds",
-                httpBuilder => httpBuilder.RequestAndValidateArrayOf<InvestmentPendingResponse>(HttpMethod.Get));
+                httpBuilder => httpBuilder.RequestAndValidate<InvestmentPendingResponse[]>(HttpMethod.Get));
 
         // if companyId is not found then 404
         //https://cabinet.moduldengi.ru/api/projects/3ccaffb2-4def-4584-b7ba-ec0ab8e8fd7f?companyId=a33523e3-4f7f-4170-bed2-c91ee2790d96
@@ -118,7 +117,7 @@ namespace ModulDengi.Integration
             return this.AuthAndRun(
                 "/api/companies/account-statement",
                 httpBuilder => httpBuilder.AddUrlQueryValues(queryValues)
-                    .RequestAndValidateArrayOf<AccountStatementResponse>(HttpMethod.Get));
+                    .RequestAndValidate<AccountStatementResponse[]>(HttpMethod.Get));
         }
 
         private bool TryLoginAndSetupToken()

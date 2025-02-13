@@ -11,12 +11,12 @@ namespace MediaServer.Workflow
 
     using ByteSizeLib;
 
-    using Common.Collections;
     using Common.Cryptography;
     using Common.Exceptions;
     using Common.Serialization.Json;
     using Common.System;
     using Common.Text;
+    using Common.System.Collections;
 
     using Jackett.Contracts;
 
@@ -510,13 +510,13 @@ namespace MediaServer.Workflow
                     $"{SortingDirectionEmoji(st).ToUnicode()} {st}",
                     string.Format(BotCommands.SortResults.Format, st)));
 
-            var inlineKeyboardMarkup = new InlineKeyboardMarkup(new []
-                {
+            var inlineKeyboardMarkup = new InlineKeyboardMarkup(
+                [
                     torrentButtons,
                     navigationButtons,
                     trackerButtons,
                     sortingButtons
-                });
+                ]);
 
             string? GetReadableSize(long? size) =>
                 size.HasValue

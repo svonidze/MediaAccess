@@ -7,7 +7,7 @@ namespace ModulDengi.Contracts
         Project[] GetProjectsRisingFunds();
 
         double GetMyFreeMoneyAmount();
-        
+
         Result<Investment> StartInvestmentFLow(Project project, in double amount);
 
         Result ConfirmInvestment(string investmentId, string confirmationCode);

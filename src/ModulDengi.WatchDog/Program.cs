@@ -3,8 +3,8 @@ namespace ModulDengi.WatchDog
     using System;
     using System.IO;
 
-    using Common.Collections;
     using Common.Http;
+    using Common.System.Collections;
 
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
@@ -79,8 +79,7 @@ namespace ModulDengi.WatchDog
                             .AddTransient<IConfirmationManager, EmailConfirmationManager>()
                             .AddTransient<IAccountant, Accountant>();
 
-                        services.AddTransient(
-                            provider => new HttpRequestBuilder(enableLogging: false));
+                        services.AddTransient<HttpRequestBuilder>();
 
                         services.AddHostedService<Worker>();
                     });

@@ -1,8 +1,8 @@
 ﻿namespace FreedomFinanceBank.Integration;
 
-using Common.Collections;
-using Common.Spreadsheets.Enum;
+using Common.Spreadsheets.Contracts.Enum;
 using Common.Spreadsheets.Excel.EPPlus;
+using Common.System.Collections;
 
 using FreedomFinanceBank.Contracts;
 
@@ -15,7 +15,7 @@ public static class Worker
     public static IEnumerable<Transaction> Extract(string fileName)
     {
         using var fileStream = File.OpenRead(fileName);
-        using var reader = new SpreadsheetReader(fileStream);
+        var reader = new SpreadsheetReader(fileStream);
         var sheet = reader.Read().AllowVerboseException().Single();
 
         foreach (var row in sheet.Cells.GroupBy(c => c.Row))

@@ -11,7 +11,11 @@ namespace ModulDengi.Core
     {
         private const int MinAmount = 500;
 
-        public bool IsPossibleToInvest(in double availableMoney, Project project, out double investingMoney, out string message)
+        public bool IsPossibleToInvest(
+            in double availableMoney,
+            Project project,
+            out double investingMoney,
+            out string message)
         {
             if (availableMoney < MinAmount)
             {
@@ -24,7 +28,7 @@ namespace ModulDengi.Core
             var nameParts = project.BorrowerShortName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             if (!nameParts.Any())
                 throw new Exception($"{new { project.BorrowerShortName }.ToJson()} cannot be split into parts");
-            
+
             investingMoney = nameParts.First() switch
                 {
                     "ИП" => MinAmount * 2,
