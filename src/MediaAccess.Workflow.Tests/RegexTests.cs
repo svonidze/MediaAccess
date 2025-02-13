@@ -3,7 +3,7 @@ namespace MediaAccess.Workflow.Tests
     using System;
     using System.Linq;
 
-    using Common.Collections;
+    using Common.System.Collections;
     using Common.Text;
 
     using MediaServer.Workflow.Constants;

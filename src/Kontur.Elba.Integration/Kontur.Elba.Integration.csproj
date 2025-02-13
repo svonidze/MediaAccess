@@ -7,7 +7,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Common.Text\Common.Text.csproj" />
+      <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Serialization.Json\Common.Serialization.Json.csproj" />
+      <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.System\Common.System.csproj" />
+      <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Text\Common.Text.csproj" />
       <ProjectReference Include="..\Kontur.Elba.Integration.Contracts\Kontur.Elba.Integration.Contracts.csproj" />
       <ProjectReference Include="..\ModulDengi.Contracts\ModulDengi.Contracts.csproj" />
       <ProjectReference Include="..\ModulDengi.Core\ModulDengi.Core.csproj" />

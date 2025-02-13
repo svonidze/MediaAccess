@@ -1,20 +1,36 @@
-﻿using Common.Collections;
-using Common.Exceptions;
+﻿using Common.Exceptions;
 using Common.Http;
 using Common.Monads;
 using Common.Serialization.Json;
+using Common.System.Collections;
+
+using Microsoft.Extensions.Logging;
 
 using Yandex.Music.Integration.Utility;
 
-var allPlaylistIds = new Dictionary<int,string>
+var allPlaylistIds = new Dictionary<int, string>
     {
-        { 1040, "rock.post" },
-        { 1044, "hip-hop" },
-        { 3, "favorite" },
-        { 1038, "jazz" },
-        { 1037, "rock.indie" },
-        { 1042, "hip-hop.lyrics" },
-        { 1015, "rock.russian" },
+        {
+            1040, "rock.post"
+        },
+        {
+            1044, "hip-hop"
+        },
+        {
+            3, "favorite"
+        },
+        {
+            1038, "jazz"
+        },
+        {
+            1037, "rock.indie"
+        },
+        {
+            1042, "hip-hop.lyrics"
+        },
+        {
+            1015, "rock.russian"
+        },
         /*
            "1004": "детский.сказка",
            "1005": "strange",
@@ -62,7 +78,7 @@ class YandexMusicIntegrator
     private const string UrlFormat = "https://music.yandex.ru/handlers/playlist.jsx?owner=kirichenkov.sa&kinds={0}";
 
     private const string SongNameFormat = "{0} - {1}";
-    
+
     private const string SongNameDelimiter = " - ";
 
     private readonly string stagingDirectoryPath;
@@ -78,7 +94,7 @@ class YandexMusicIntegrator
         bool forceReProcessing = false)
     {
         var existingPlaylists = new Dictionary<int, string>();
-        
+
         foreach (var playlistId in playlistIds)
         {
             var fileName = $"yandex-{playlistId}";
@@ -93,14 +109,14 @@ class YandexMusicIntegrator
                     continue;
                 }
             }
-            
+
             var convertResult = ConvertPlaylistToTextFile(exportFilePath);
             if (convertResult.IsLeft)
             {
                 Console.WriteLine(convertResult.Left!.GetShortDescription());
                 continue;
             }
-            
+
             var playlist = convertResult.Right!;
             existingPlaylists.Add(playlistId, playlist.Title);
 
@@ -120,10 +136,7 @@ class YandexMusicIntegrator
             {
                 var artists = track.Artists.Select(a => a.Name).JoinToString(",");
                 var trackTitle = track.Title;
-                var line = string.Format(
-                    SongNameFormat,
-                    WrapFields(artists),
-                    WrapFields(trackTitle));
+                var line = string.Format(SongNameFormat, WrapFields(artists), WrapFields(trackTitle));
                 await writer.WriteLineAsync(line);
             }
 
@@ -137,7 +150,11 @@ class YandexMusicIntegrator
     {
         try
         {
-            var httpRequestBuilder = new HttpRequestBuilder().SetUrl(url);
+            var logger = _CreateLogger();
+
+            // Example of logging usage
+            logger.LogInformation("Logger for console has been successfully set up.");
+            var httpRequestBuilder = new HttpRequestBuilder(logger).SetUrl(url);
             await using var httpStream = await httpRequestBuilder.GetStreamAsync();
             await using var fileStream = new FileStream(filePath, FileMode.OpenOrCreate);
             Console.WriteLine($"Saving to {filePath}");
@@ -148,6 +165,13 @@ class YandexMusicIntegrator
         {
             return new EitherExceptionOr<string>(e);
         }
+    }
+
+    private static ILogger<YandexMusicIntegrator> _CreateLogger()
+    {
+        var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Debug));
+
+        return loggerFactory.CreateLogger<YandexMusicIntegrator>();
     }
 
     private static EitherExceptionOr<Playlist> ConvertPlaylistToTextFile(string jsonFilePath)
@@ -162,12 +186,13 @@ class YandexMusicIntegrator
         Playlist? playlist;
         try
         {
-            playlist = streamReader.FromJsonTo<Root>()?.Playlist;
+            playlist = streamReader.FromJsonFileTo<Root>()?.Playlist;
         }
         catch (Exception e)
         {
             return new EitherExceptionOr<Playlist>(e);
         }
+
         return playlist is null
             ? new EitherExceptionOr<Playlist>(new NullReferenceException(nameof(playlist)))
             : new EitherExceptionOr<Playlist>(playlist);

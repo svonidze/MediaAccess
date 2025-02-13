@@ -8,6 +8,13 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Http.Contracts\Common.Http.Contracts.csproj" />
+      <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Net\Common.Net.csproj" />
+      <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Reflection\Common.Reflection.csproj" />
+      <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Serialization.Json\Common.Serialization.Json.csproj" />
+      <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Spreadsheets.Excel.EPPlus\Common.Spreadsheets.Excel.EPPlus.csproj" />
+      <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.System\Common.System.csproj" />
+      <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Text\Common.Text.csproj" />
       <ProjectReference Include="..\FreedomFinanceBank.Integration\FreedomFinanceBank.Integration.csproj" />
       <ProjectReference Include="..\Kontur.Elba.Integration\Kontur.Elba.Integration.csproj" />
       <ProjectReference Include="..\ModulDengi.Contracts\ModulDengi.Contracts.csproj" />
@@ -18,8 +25,8 @@
 
     <ItemGroup>
       <PackageReference Include="CommandLineParser" Version="2.9.1" />
-      <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
-      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+      <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.2" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.2" />
     </ItemGroup>
 
 </Project>

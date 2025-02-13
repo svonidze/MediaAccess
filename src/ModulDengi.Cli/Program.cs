@@ -7,10 +7,10 @@
 
     using CommandLine;
 
-    using Common.Collections;
     using Common.Http;
     using Common.Serialization.Json;
     using Common.System;
+    using Common.System.Collections;
 
     using FreedomFinanceBank.Integration;
 
@@ -75,7 +75,7 @@
             Action<TParam, Lazy<ServiceProvider>, IServiceCollection> action)
         {
             var serviceCollection = new ServiceCollection().AddOptions()
-                .AddTransient(_ => new HttpRequestBuilder(enableLogging: true));
+                .AddTransient<HttpRequestBuilder>();
 
             ParseArgumentsAndRun<TParam>(
                 args,

@@ -10,11 +10,11 @@ namespace ZenMoney.Integration
     using Common.System;
     using Common.Text;
 
+    using FreedomFinanceBank.Contracts;
+
     using ModulDengi.Contracts;
     using ModulDengi.Core;
     using ModulDengi.Integration.Contracts.Responses;
-
-    using ZenMoney.Integration.Contracts.Types;
 
     public static class ZenMoneyConverter
     {
@@ -38,10 +38,10 @@ namespace ZenMoney.Integration
             ConvertToTransactions(accountStatements).Select(transaction => WrapToFetch(transaction));
         
         public static IEnumerable<string> ConvertToJsFetchRequest(
-            IEnumerable<FreedomFinanceBank.Contracts.Transaction> transactions) =>
+            IEnumerable<Transaction> transactions) =>
             ConvertToTransactions(transactions).Select(transaction => WrapToFetch(transaction));
 
-        private static IEnumerable<Transaction> ConvertToTransactions(
+        private static IEnumerable<Contracts.Types.Transaction> ConvertToTransactions(
             IEnumerable<AccountStatementResponse> accountStatements) =>
             accountStatements
                 .Select(
@@ -66,7 +66,7 @@ namespace ZenMoney.Integration
                                 .AppendIf(description.TimePeriodInDays.HasValue, $" срок {description.TimePeriodInDays} д.")
                                 .AppendIf(description.Percent.HasValue, $" под {description.Percent}%");
 
-                            var transaction = new Transaction
+                            var transaction = new Contracts.Types.Transaction
                                 {
                                     Category = Constants.ZeroValue,
                                     Comment = comment.ToString(),
@@ -132,12 +132,12 @@ namespace ZenMoney.Integration
                             return transaction;
                         });
 
-        private static IEnumerable<Transaction> ConvertToTransactions(
-            IEnumerable<FreedomFinanceBank.Contracts.Transaction> transactions)
+        private static IEnumerable<Contracts.Types.Transaction> ConvertToTransactions(
+            IEnumerable<Transaction> transactions)
         {
             foreach (var sourceTransaction in transactions)
             {
-                var transaction = new Transaction
+                var transaction = new Contracts.Types.Transaction
                     {
                         Category = Constants.ZeroValue,
                         Comment = sourceTransaction.Description,
@@ -169,7 +169,7 @@ namespace ZenMoney.Integration
             }
         }
         
-        private static string WrapToFetch(params Transaction[] transactions)
+        private static string WrapToFetch(params Contracts.Types.Transaction[] transactions)
         {
             var parameters = new Dictionary<string, object>
                 {

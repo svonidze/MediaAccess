@@ -12,10 +12,11 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Common.Collections\Common.Collections.csproj" />
-      <ProjectReference Include="..\Common.Serialization.Json\Common.Serialization.Json.csproj" />
-      <ProjectReference Include="..\Common.Spreadsheets.Excel.EPPlus\Common.Spreadsheets.Excel.EPPlus.csproj" />
-      <ProjectReference Include="..\Common.Spreadsheets\Common.Spreadsheets.csproj" />
+      <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Spreadsheets.Contracts\Common.Spreadsheets.Contracts.csproj" />
+      <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Spreadsheets.Excel.EPPlus\Common.Spreadsheets.Excel.EPPlus.csproj" />
+      <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.System.Collections\Common.System.Collections.csproj" />
+      <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Serialization.Json\Common.Serialization.Json.csproj" />
+      <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Spreadsheets.Excel.EPPlus\Common.Spreadsheets.Excel.EPPlus.csproj" />
       <ProjectReference Include="..\FreedomFinanceBank.Contracts\FreedomFinanceBank.Contracts.csproj" />
     </ItemGroup>
 

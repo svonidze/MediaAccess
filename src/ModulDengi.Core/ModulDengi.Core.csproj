@@ -7,16 +7,19 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Common.Net\Common.Net.csproj" />
-      <ProjectReference Include="..\Common.System\Common.System.csproj" />
+      <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Http.Contracts\Common.Http.Contracts.csproj" />
+      <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Net\Common.Net.csproj" />
+      <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Results\Common.Results.csproj" />
+      <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Serialization.Json\Common.Serialization.Json.csproj" />
+      <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Net\Common.Net.csproj" />
+      <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.System\Common.System.csproj" />
       <ProjectReference Include="..\ModulDengi.Contracts\ModulDengi.Contracts.csproj" />
       <ProjectReference Include="..\ModulDengi.Integration\ModulDengi.Integration.csproj" />
     </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="MailKit" Version="2.9.0" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1" />
-      <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.2" />
     </ItemGroup>
 
 </Project>

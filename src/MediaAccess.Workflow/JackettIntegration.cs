@@ -5,9 +5,9 @@ namespace MediaServer.Workflow
     using System.Linq;
     using System.Net.Http;
 
-    using Common.Collections;
     using Common.DateTime;
     using Common.Http;
+    using Common.System.Collections;
 
     using Jackett.Contracts;
 
@@ -17,9 +17,16 @@ namespace MediaServer.Workflow
 
         private readonly IJackettAccessConfiguration config;
 
-        public JackettIntegration(IJackettAccessConfiguration config)
+        private readonly HttpRequestBuilder httpRequestBuilder;
+
+        public JackettIntegration(IJackettAccessConfiguration config, HttpRequestBuilder httpRequestBuilder)
         {
             this.config = config;
+            this.httpRequestBuilder = httpRequestBuilder;
+            if (this.config.Timeout is not null)
+            {
+                this.httpRequestBuilder.SetTimeout(this.config.Timeout.Value);
+            }
         }
 
         /*
@@ -54,9 +61,10 @@ _: 1676322671997
                 .Where(tn => !string.IsNullOrWhiteSpace(tn))
                 .Foreach(tn => queryValues.Add(ParameterKeys.Tracker, tn!.ToLower()));
             
-            var httpBuilder = new HttpRequestBuilder(this.config.Timeout, enableLogging: true).SetUrl(
+            var httpBuilder = this.httpRequestBuilder.SetUrl(
                 url,
                 queryValues);
+            
             return httpBuilder.RequestAndValidate<ManualSearchResult>(HttpMethod.Get);
         }
         

@@ -4,8 +4,8 @@ namespace MediaServer.Workflow
     using System.Collections.Concurrent;
     using System.Collections.Generic;
 
-    using Common.Collections;
     using Common.Serialization.Json;
+    using Common.System.Collections;
 
     using MediaServer.Contracts;
 

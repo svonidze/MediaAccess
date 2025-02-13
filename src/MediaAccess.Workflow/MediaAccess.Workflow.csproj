@@ -8,20 +8,25 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="ByteSize" Version="1.3.0" />
-      <PackageReference Include="Telegram.Bot" Version="15.0.0" />
-      <PackageReference Include="Transmission.API.RPC" Version="2.0.0" />
+        <PackageReference Include="ByteSize" Version="1.3.0"/>
+        <PackageReference Include="Telegram.Bot" Version="15.0.0"/>
+        <PackageReference Include="Transmission.API.RPC" Version="2.0.0"/>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\BitTorrent.Contracts\BitTorrent.Contracts.csproj" />
-      <ProjectReference Include="..\Common.Collections\Common.Collections.csproj" />
-      <ProjectReference Include="..\Common.Cryptography\Common.Cryptography.csproj" />
-      <ProjectReference Include="..\Common.DateTime\Common.DateTime.csproj" />
-      <ProjectReference Include="..\Common.Http\Common.Http.csproj" />
-      <ProjectReference Include="..\Common.System\Common.System.csproj" />
-      <ProjectReference Include="..\Jackett.Contracts\Jackett.Contracts.csproj" />
-      <ProjectReference Include="..\MediaAccess.Contracts\MediaAccess.Contracts.csproj" />
+        <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Cryptography\Common.Cryptography.csproj"/>
+        <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.DateTime\Common.DateTime.csproj"/>
+        <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Exceptions\Common.Exceptions.csproj"/>
+        <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Http.Contracts\Common.Http.Contracts.csproj"/>
+        <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Http\Common.Http.csproj"/>
+        <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Serialization.Json\Common.Serialization.Json.csproj"/>
+        <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.System.Collections\Common.System.Collections.csproj"/>
+        <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.System\Common.System.csproj"/>
+        <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Text\Common.Text.csproj"/>
+        <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Cryptography\Common.Cryptography.csproj"/>
+        <ProjectReference Include="..\Jackett.Contracts\Jackett.Contracts.csproj"/>
+        <ProjectReference Include="..\MediaAccess.Contracts\MediaAccess.Contracts.csproj"/>
+        <ProjectReference Include="..\BitTorrent.Contracts\BitTorrent.Contracts.csproj"/>
     </ItemGroup>
 
 </Project>
