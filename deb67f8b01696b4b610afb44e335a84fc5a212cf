@@ -18,6 +18,24 @@
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "653a80cb_5c653138",
+        "filename": "src/Jackett.Contracts/Jackett.Contracts.csproj",
+        "patchSetId": 1
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1018167
+      },
+      "writtenOn": "2025-02-14T17:06:44Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "19ac471a_34c718e1",
+      "revId": "deb67f8b01696b4b610afb44e335a84fc5a212cf",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "9fabe2cf_54632e4f",
@@ -31,6 +49,24 @@
       "writtenOn": "2025-02-14T16:09:58Z",
       "side": 1,
       "message": "remove",
+      "revId": "deb67f8b01696b4b610afb44e335a84fc5a212cf",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "014e261a_131aa6b7",
+        "filename": "src/MediaAccess.Workflow.Tests/MediaAccess.Workflow.Tests.csproj",
+        "patchSetId": 1
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1018167
+      },
+      "writtenOn": "2025-02-14T17:06:44Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "9fabe2cf_54632e4f",
       "revId": "deb67f8b01696b4b610afb44e335a84fc5a212cf",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
     },
@@ -52,6 +88,24 @@
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "f5ecaa0f_58bda6bb",
+        "filename": "src/MediaAccess.Workflow/MediaAccess.Workflow.csproj",
+        "patchSetId": 1
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1018167
+      },
+      "writtenOn": "2025-02-14T17:06:44Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "dafa15de_672a7c0c",
+      "revId": "deb67f8b01696b4b610afb44e335a84fc5a212cf",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "3dee7ad9_572cb17c",
@@ -65,6 +119,24 @@
       "writtenOn": "2025-02-14T16:09:58Z",
       "side": 1,
       "message": "remove",
+      "revId": "deb67f8b01696b4b610afb44e335a84fc5a212cf",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "034f577f_2bfb54da",
+        "filename": "src/ModulDengi.Contracts/ModulDengi.Contracts.csproj",
+        "patchSetId": 1
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1018167
+      },
+      "writtenOn": "2025-02-14T17:06:44Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "3dee7ad9_572cb17c",
       "revId": "deb67f8b01696b4b610afb44e335a84fc5a212cf",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
     },
@@ -86,6 +158,24 @@
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "996197fb_67811741",
+        "filename": "src/ModulDengi.Core/ModulDengi.Core.csproj",
+        "patchSetId": 1
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1018167
+      },
+      "writtenOn": "2025-02-14T17:06:44Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "05ea7c75_ad9f07b0",
+      "revId": "deb67f8b01696b4b610afb44e335a84fc5a212cf",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "36c8e3b4_6ab29bfd",
@@ -99,6 +189,24 @@
       "writtenOn": "2025-02-14T16:09:58Z",
       "side": 1,
       "message": "remove",
+      "revId": "deb67f8b01696b4b610afb44e335a84fc5a212cf",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ab8be1d0_a837e472",
+        "filename": "src/ModulDengi.Integration.Contracts/ModulDengi.Integration.Contracts.csproj",
+        "patchSetId": 1
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1018167
+      },
+      "writtenOn": "2025-02-14T17:06:44Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "36c8e3b4_6ab29bfd",
       "revId": "deb67f8b01696b4b610afb44e335a84fc5a212cf",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
     },
@@ -133,6 +241,24 @@
       "writtenOn": "2025-02-14T16:09:58Z",
       "side": 1,
       "message": "fix with real NuGets!",
+      "revId": "deb67f8b01696b4b610afb44e335a84fc5a212cf",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "50504d01_8b4029e3",
+        "filename": "src/Yandex.Music.Integration.Utility/Yandex.Music.Integration.Utility.csproj",
+        "patchSetId": 1
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1018167
+      },
+      "writtenOn": "2025-02-14T17:06:44Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "540d24a7_0239725f",
       "revId": "deb67f8b01696b4b610afb44e335a84fc5a212cf",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
     }
