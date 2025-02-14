@@ -228,6 +228,24 @@
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "ee27b454_de3fef33",
+        "filename": "src/Yandex.Music.Integration.Utility/Program.cs",
+        "patchSetId": 1
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1018167
+      },
+      "writtenOn": "2025-02-14T17:06:52Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "f13ab03d_fe4df293",
+      "revId": "deb67f8b01696b4b610afb44e335a84fc5a212cf",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "540d24a7_0239725f",
