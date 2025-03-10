@@ -1,16 +1,18 @@
 import requests
 import os
+import threading
 
 base_url = "https://software.sonicwall.com/NetExtender/"
 
 file_name_pattern = "NetExtender-linux-amd64-10.2.236-XXX.deb"
+
+
 # NetExtender-linux-amd64-10.3.0-21.deb - exists!
 # file_name_pattern = "NetExtender-linux-amd64-10.3.0-XXX.deb"
 
 
-for i in range(1000, 1, -1):
-    number = str(i)
-    file_name = file_name_pattern.replace("XXX", number)
+def check_and_download_file(number):
+    file_name = file_name_pattern.replace("XXX", str(number))
     url = base_url + file_name
     print(f"Checking: {url}")
 
@@ -30,8 +32,21 @@ for i in range(1000, 1, -1):
                 file.write(file_response.content)
 
             print("File downloaded successfully!")
-            break
+            return True
         else:
             print(f"File not found, HTTP status code: {response_status_code}. {response}")
     except requests.RequestException as e:
         print(f"Error checking URL {url}: {e}")
+
+    return False
+
+
+threads = []
+for i in range(10000, 1000, -1):
+    thread = threading.Thread(target=check_and_download_file, args=(i,))
+    threads.append(thread)
+    thread.start()
+
+for thread in threads:
+    while thread.is_alive():
+        thread.join(timeout=0.1)
