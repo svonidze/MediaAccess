@@ -6,7 +6,7 @@ using Common.System.Collections;
 
 using FreedomFinanceBank.Contracts;
 
-public static class Worker
+public static class ExcelStatementReader
 {
     private const int FirstRow = 3;
 
@@ -26,7 +26,7 @@ public static class Worker
                 .Where(c => c.Column <= LastColumn)
                 .GroupBy(r => r.Column)
                 .ToDictionary(r => r.Key, r => r.Single().Text);
-            var keepWorking = TryExtract(rowCells, out var transaction);
+            var keepWorking = _TryExtract(rowCells, out var transaction);
             if (!keepWorking)
             {
                 yield break;
@@ -39,7 +39,7 @@ public static class Worker
         }
     }
 
-    private static bool TryExtract(
+    private static bool _TryExtract(
         IReadOnlyDictionary<SpreadsheetColumns, string> rowCells,
         out Transaction? transaction)
     {
