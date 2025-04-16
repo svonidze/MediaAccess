@@ -140,7 +140,7 @@
             switch (parameters.ConvertTo)
             {
                 case DataSourceType.ZenMoney:
-                    var transactions = Worker.Extract(parameters.InputFilePath).ToArray();
+                    var transactions = ExcelStatementReader.Extract(parameters.InputFilePath).ToArray();
 
                     foreach (var item in ZenMoneyConverter.ConvertToJsFetchRequest(transactions))
                     {
