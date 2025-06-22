@@ -121,12 +121,12 @@ public static class ZenMoneyConverter
                         if (statement.Amount < 0)
                         {
                             transaction.Outcome = _GetFormattedAmount(statement.Amount);
-                            transaction.Income = Constants.ZeroValue;
+                            transaction.Income = Constants.ZeroStringValue;
                         }
                         else
                         {
                             transaction.Income = _GetFormattedAmount(statement.Amount);
-                            transaction.Outcome = Constants.ZeroValue;
+                            transaction.Outcome = Constants.ZeroStringValue;
                         }
 
                         return transaction;
@@ -154,14 +154,14 @@ public static class ZenMoneyConverter
             var amount = _GetFormattedAmount(sourceTransaction.Amount);
             if (sourceTransaction.Amount < 0)
             {
-                transaction.Income = Constants.ZeroValue;
+                transaction.Income = Constants.ZeroStringValue;
                 transaction.Outcome = amount;
                 transaction.AccountOutcome = account;
             }
             else
             {
                 transaction.Income = amount;
-                transaction.Outcome = Constants.ZeroValue;
+                transaction.Outcome = Constants.ZeroStringValue;
                 transaction.AccountIncome = account;
             }
                 
