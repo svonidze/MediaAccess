@@ -1,6 +1,7 @@
 namespace ModulDengi.Core
 {
     using System.Linq;
+    using System.Threading.Tasks;
 
     using Common.Net;
     using Common.Results;
@@ -44,9 +45,9 @@ namespace ModulDengi.Core
             return true;
         }
 
-        public Project[] GetProjectsRisingFunds() =>
-            this.api.GetProjectsRisingFunds()
-                .Select(
+        public async Task<Project[]?> GetProjectsRisingFunds() =>
+            (await this.api.GetProjectsRisingFunds())
+                ?.Select(
                     p => new Project
                         {
                             Id = p.Id,
@@ -60,17 +61,17 @@ namespace ModulDengi.Core
                         })
                 .ToArray();
 
-        public double GetMyFreeMoneyAmount()
+        public async Task<double> GetMyFreeMoneyAmount()
         {
             //var myCompany = this.api.MyCompanies().Single();
-            var balance = this.api.GetBalance(this.accessConfig.MyCompanyId);
-            return balance.Investor.Free;
+            var balance = await this.api.GetBalance(this.accessConfig.MyCompanyId);
+            return balance!.Investor.Free;
         }
         
-        public Result<Investment> StartInvestmentFLow(Project project, in double amount)
+        public async Task<Result<Investment>> StartInvestmentFlow(Project project,double amount)
         {
-            var investmentCreatedResponse = this.api.CreateInvestment(project.Id, amount);
-            if (!investmentCreatedResponse.IsSuccessful)
+            var investmentCreatedResponse = await this.api.CreateInvestment(project.Id, amount);
+            if (!investmentCreatedResponse!.IsSuccessful)
             {
                 return new Result<Investment>
                     {
@@ -84,8 +85,8 @@ namespace ModulDengi.Core
                     Id = investmentCreatedResponse.InvestmentId
                 };
             
-            var signInvestmentResponse = this.api.SignInvestment(investment.Id);
-            if (!signInvestmentResponse.IsSuccessful)
+            var signInvestmentResponse = await this.api.SignInvestment(investment.Id);
+            if (!signInvestmentResponse!.IsSuccessful)
             {
                 return new Result<Investment>
                     {
@@ -102,10 +103,10 @@ namespace ModulDengi.Core
                 };
         }
 
-        public Result ConfirmInvestment(string investmentId, string confirmationCode)
+        public async Task<Result> ConfirmInvestment(string investmentId, string confirmationCode)
         {
-            var response = this.api.ConfirmInvestment(investmentId, confirmationCode);
-            if (!response.IsSuccessful)
+            var response = await this.api.ConfirmInvestment(investmentId, confirmationCode);
+            if (!response!.IsSuccessful)
             {
                 return new Result
                     {

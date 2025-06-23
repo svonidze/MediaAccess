@@ -1,7 +1,9 @@
 namespace Jackett.Contracts
 {
+    using System.Threading.Tasks;
+
     public interface IJackettIntegration
     {
-        ManualSearchResult SearchTorrents(string searchRequest, params string?[] trackerNames);
+        Task<ManualSearchResult?> SearchTorrents(string searchRequest, params string?[] trackerNames);
     }
 }

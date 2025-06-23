@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# 
+#
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Telegram.BotServer", "src\Telegram.BotServer\Telegram.BotServer.csproj", "{935C6C73-327F-4E25-87F8-53DEA8384C1A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Jackett.Contracts", "src\Jackett.Contracts\Jackett.Contracts.csproj", "{6CB362B1-0DD8-45D0-A317-2F147C8B76B7}"
@@ -141,6 +141,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common.IO", "libs\Smotion.Common\src\Common.IO\Common.IO.csproj", "{1B11E33A-CCD4-417D-85FC-971FE724E177}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common.CommandLine", "libs\Smotion.Common\src\Common.CommandLine\Common.CommandLine.csproj", "{FB91B659-51E7-4F1C-A8BB-526E2618329A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZenMoney.Integration.Tests", "src\ZenMoney.Integration.Tests\ZenMoney.Integration.Tests.csproj", "{CFCF10AA-2C1A-450E-92D7-925B45A2B266}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -388,6 +390,10 @@ Global
 		{FB91B659-51E7-4F1C-A8BB-526E2618329A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FB91B659-51E7-4F1C-A8BB-526E2618329A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FB91B659-51E7-4F1C-A8BB-526E2618329A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CFCF10AA-2C1A-450E-92D7-925B45A2B266}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CFCF10AA-2C1A-450E-92D7-925B45A2B266}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CFCF10AA-2C1A-450E-92D7-925B45A2B266}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CFCF10AA-2C1A-450E-92D7-925B45A2B266}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{B61058E2-1956-401F-A763-7833CD125050} = {957E7432-5A5F-4CB8-8178-50E681ABE37E}
@@ -442,5 +448,6 @@ Global
 		{C720C267-4F99-41D9-A4D9-9E0E45B94381} = {2D66AB37-B525-4234-8953-A70F061EF31D}
 		{1B11E33A-CCD4-417D-85FC-971FE724E177} = {2D66AB37-B525-4234-8953-A70F061EF31D}
 		{FB91B659-51E7-4F1C-A8BB-526E2618329A} = {2D66AB37-B525-4234-8953-A70F061EF31D}
+		{CFCF10AA-2C1A-450E-92D7-925B45A2B266} = {957E7432-5A5F-4CB8-8178-50E681ABE37E}
 	EndGlobalSection
 EndGlobal
