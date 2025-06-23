@@ -8,6 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.DI\Common.DI.csproj" />
       <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Http.Contracts\Common.Http.Contracts.csproj" />
       <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Net\Common.Net.csproj" />
       <ProjectReference Include="..\..\libs\Smotion.Common\src\Common.Reflection\Common.Reflection.csproj" />
@@ -26,7 +27,8 @@
     <ItemGroup>
       <PackageReference Include="CommandLineParser" Version="2.9.1" />
       <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.2" />
-      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.2" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.6" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.2" />
     </ItemGroup>
 
 </Project>

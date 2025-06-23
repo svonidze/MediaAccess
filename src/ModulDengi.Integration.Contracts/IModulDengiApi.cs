@@ -1,23 +1,26 @@
-namespace ModulDengi.Integration.Contracts
+namespace ModulDengi.Integration.Contracts;
+
+using System;
+using System.Threading.Tasks;
+
+using ModulDengi.Integration.Contracts.Responses;
+
+public interface IModulDengiApi
 {
-    using System;
+    Task<BalanceResponse?> GetBalance(string myCompanyId);
 
-    using ModulDengi.Integration.Contracts.Responses;
+    Task<InvestmentPendingResponse[]?> GetProjectsRisingFunds();
 
-    public interface IModulDengiApi
-    {
-        BalanceResponse GetBalance(string myCompanyId);
+    Task<InvestmentCreatedResponse?> CreateInvestment(string projectId, double money);
 
-        InvestmentPendingResponse[] GetProjectsRisingFunds();
+    Task<ModulDengiResponse?> SignInvestment(string investmentId);
 
-        InvestmentCreatedResponse CreateInvestment(string projectId, double money);
+    Task<ModulDengiResponse?> ConfirmInvestment(string investmentId, string confirmationCode);
 
-        ModulDengiResponse SignInvestment(string investmentId);
+    Task<InvestmentDoneResponse[]?> GetInvestments(string myCompanyId);
 
-        ModulDengiResponse ConfirmInvestment(string investmentId, string confirmationCode);
-
-        InvestmentDoneResponse[] GetInvestments(string myCompanyId);
-
-        AccountStatementResponse[] GetAccountStatements(string companyId, DateTime? dateSince = null, DateTime? dateTo = null);
-    }
+    Task<AccountStatementResponse[]?> GetAccountStatements(
+        string companyId,
+        DateTime? dateSince = null,
+        DateTime? dateTo = null);
 }

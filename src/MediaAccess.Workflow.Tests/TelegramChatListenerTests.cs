@@ -126,13 +126,13 @@ namespace MediaAccess.Workflow.Tests
 
         private class FakeJackettIntegration : IJackettIntegration
         {
-            public ManualSearchResult SearchTorrents(string searchRequest, params string?[] trackerNames)
+            public Task<ManualSearchResult?> SearchTorrents(string searchRequest, params string?[] trackerNames)
             {
-                return new ManualSearchResult
+                return Task.FromResult(new ManualSearchResult
                     {
                         Indexers = new List<ManualSearchResultIndexer>(),
                         Results = new List<TrackerCacheResult>()
-                    };
+                    });
             }
         }
     }
