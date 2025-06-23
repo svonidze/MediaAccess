@@ -131,8 +131,8 @@ class YandexMusicIntegrator(string stagingDirectoryPath)
         {
             var logger = _CreateLogger();
 
-            var httpRequestBuilder = new HttpRequestBuilder(logger).SetUrl(url);
-            await using var httpStream = await httpRequestBuilder.GetStreamAsync();
+            var httpRequestBuilder = new HttpRequestBuilder(logger);
+            await using var httpStream = await httpRequestBuilder.GetStreamAsync(new Uri(url));
             await using var fileStream = new FileStream(filePath, FileMode.OpenOrCreate);
             logger.LogDebug("Saving to {FilePath}", filePath);
             await httpStream.CopyToAsync(fileStream);

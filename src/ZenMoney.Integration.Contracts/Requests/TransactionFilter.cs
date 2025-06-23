@@ -1,3 +1,5 @@
+namespace ZenMoney.Integration.Contracts.Requests;
+
 using Common.Http.Contracts;
 
 public class TransactionFilter

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 using Common.Http;
@@ -11,14 +10,13 @@ using Common.Serialization.Json;
 
 using Microsoft.Extensions.Logging;
 
+using ZenMoney.Integration.Contracts.Requests;
 using ZenMoney.Integration.Contracts.Types;
 
-public class ZenMoneyClient(ILogger logger, IHttpRequestBuilder httRequestBuilder)
-{
-    // update this from the website
-    private const string Cookie =
-        "_ga=GA1.2.1983459596.1698219072; _ym_uid=1698219072671102771; __utmz=180328751.1698219093.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); _ga_Z1Z1XNZELK=GS1.2.1722778499.7.0.1722778499.0.0.0; _ym_d=1739477874; __utma=180328751.1983459596.1698219072.1740936849.1741348584.35; PHPSESSID=e07unac0ne5i2te96s2knsu3p6";
+namespace ZenMoney.Integration;
 
+public class ZenMoneyClient(ILogger logger, IHttpRequestBuilder httRequestBuilder, string cookie)
+{
     private const string HostUrl = "https://zenmoney.ru";
 
     private const string ApiV2Url = $"{HostUrl}/api/v2";
@@ -38,7 +36,6 @@ public class ZenMoneyClient(ILogger logger, IHttpRequestBuilder httRequestBuilde
             { "sec-fetch-mode", "cors" },
             { "sec-fetch-site", "same-origin" },
             { "x-requested-with", "XMLHttpRequest" },
-            { "cookie", Cookie },
             { "Referer", ReferrerUrl }
         };
 
@@ -56,7 +53,7 @@ public class ZenMoneyClient(ILogger logger, IHttpRequestBuilder httRequestBuilde
         return await httRequestBuilder.RequestAndValidateAsync<Transaction[]>(
             HttpMethod.Get,
             uri,
-            _ConfigureRequest);
+            this._ConfigureRequest);
     }
     
     public async Task<Dictionary<int, Connector>?> FetchConnectors()
@@ -64,11 +61,12 @@ public class ZenMoneyClient(ILogger logger, IHttpRequestBuilder httRequestBuilde
         return await httRequestBuilder.RequestAndValidateAsync<Dictionary<int, Connector>>(
             HttpMethod.Get,
             $"{ApiS1Url}/connector/",
-            _ConfigureRequest);
+            this._ConfigureRequest);
     }
 
-    private static void _ConfigureRequest(HttpRequestMessage request)
+    private void _ConfigureRequest(HttpRequestMessage request)
     {
+        request.Headers.Add("cookie", cookie);
         foreach (var header in Headers)
         {
             request.Headers.TryAddWithoutValidation(header.Key, header.Value);
@@ -86,7 +84,7 @@ public class ZenMoneyClient(ILogger logger, IHttpRequestBuilder httRequestBuilde
             url,
             request =>
                 {
-                    _ConfigureRequest(request);
+                    this._ConfigureRequest(request);
                     request.SetContent(new StringContent(transaction.ToJson(), Encoding.UTF8, "application/json"));
                 });
 

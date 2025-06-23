@@ -6,6 +6,7 @@ namespace MediaServer.Workflow
     using System.Collections.Specialized;
     using System.Linq;
     using System.Text.RegularExpressions;
+    using System.Threading.Tasks;
 
     using BitTorrent.Contracts;
 
@@ -256,7 +257,7 @@ namespace MediaServer.Workflow
                 return;
             }
 
-            var actions = new Dictionary<Regex, Action<Match>>
+            var actions = new Dictionary<Regex, Func<Match,Task>>
                 {
                     { UserCommands.StartBotCommunication.Regex, HandleStartBotCommunication },
                     { UserCommands.Kinopoisk.Regex, HandleKinopoisk },
@@ -264,7 +265,7 @@ namespace MediaServer.Workflow
                     { UserCommands.Torrent.Regex, HandleTorrent },
                 };
             
-            void HandleStartBotCommunication(Match match)
+            Task HandleStartBotCommunication(Match match)
             {
                 log.Text(
                     "Greeting! " + NewLine 
@@ -273,36 +274,37 @@ namespace MediaServer.Workflow
                     + $"Lets start with typing {UserCommands.Torrent.Commands.JoinToString(" or ")}." + NewLine
                     + "For more details see https://github.com/svonidze/MediaAccess");
                 log.Log(match.Value);
+                return Task.CompletedTask;
             }
 
-            void HandleKinopoisk(Match match)
+            async Task HandleKinopoisk(Match match)
             {
                 var searchRequest =
                     $"{match.Groups[UserCommands.Kinopoisk.Groups.RusName]} {match.Groups[UserCommands.Kinopoisk.Groups.EngName]}";
-                this.SearchTorrents(log, searchRequest);
+                await this.SearchTorrents(log, searchRequest);
             }
 
-            void HandleFilm(Match match)
+            async Task HandleFilm(Match match)
             {
                 var searchRequest = match.Groups[UserCommands.Film.Groups.Name].Value;
-                this.SearchTorrents(log, searchRequest);
+                await this.SearchTorrents(log, searchRequest);
             }
-            
-            void StartTorrentSearch(string input)
+
+            async Task StartTorrentSearch(string input)
             {
                 if (UserCommands.SearchRequest.Regex.TryMath(input, out var match))
                 {
                     var searchRequest = match.Groups[UserCommands.SearchRequest.Groups.Input];
                     var trackerName = match.Groups[UserCommands.SearchRequest.Groups.TrackerName];
-                    this.SearchTorrents(log, searchRequest.Value, trackerName.Value);
+                    await this.SearchTorrents(log, searchRequest.Value, trackerName.Value);
                 }
                 else
                 {
-                    this.SearchTorrents(log, input);
+                    await this.SearchTorrents(log, input);
                 }
             }
-            
-            void HandleTorrent(Match match)
+
+            async Task HandleTorrent(Match match)
             {
                 var searchRequest = match.Groups[UserCommands.Torrent.Groups.Input];
                 if (searchRequest.Value.IsNullOrEmpty())
@@ -312,7 +314,7 @@ namespace MediaServer.Workflow
                     return;
                 }
 
-                StartTorrentSearch(searchRequest.Value);
+                await StartTorrentSearch(searchRequest.Value);
             }
 
             foreach (var regex in actions.Keys)
@@ -340,7 +342,7 @@ namespace MediaServer.Workflow
         
         private int GetResultIndex(TrackerCacheResult t) => this.torrents!.Results.IndexOf(t) + 1;
 
-        private void SearchTorrents(
+        private async Task SearchTorrents(
             ITelegramClientAndServerLogger log,
             string searchRequest,
             string? trackerName = null)
@@ -364,7 +366,7 @@ namespace MediaServer.Workflow
             try
             {
                 this.torrents = null;
-                this.torrents = this.jackett.SearchTorrents(searchRequest, trackerName);
+                this.torrents = await this.jackett.SearchTorrents(searchRequest, trackerName);
 
                 log.Log($"Done {action}: " 
                     + $"Found {this.torrents?.Results.Count} results from "

@@ -4,6 +4,7 @@ namespace MediaServer.Workflow
     using System.Collections.Specialized;
     using System.Linq;
     using System.Net.Http;
+    using System.Threading.Tasks;
 
     using Common.DateTime;
     using Common.Http;
@@ -47,7 +48,7 @@ _: 1676322671997
     "credentials": "include"
 });
          */
-        public ManualSearchResult SearchTorrents(string searchRequest, params string?[] trackerNames)
+        public async Task<ManualSearchResult?> SearchTorrents(string searchRequest, params string?[] trackerNames)
         {
             var url = string.Format(UrlFormat, this.config.Url);
 
@@ -57,15 +58,12 @@ _: 1676322671997
                     { ParameterKeys.Query, searchRequest },
                     { ParameterKeys.Date, DateTime.UtcNow.ToUnixTimestamp().ToString() }
                 };
-            trackerNames
-                .Where(tn => !string.IsNullOrWhiteSpace(tn))
+            trackerNames.Where(tn => !string.IsNullOrWhiteSpace(tn))
                 .Foreach(tn => queryValues.Add(ParameterKeys.Tracker, tn!.ToLower()));
-            
-            var httpBuilder = this.httpRequestBuilder.SetUrl(
-                url,
-                queryValues);
-            
-            return httpBuilder.RequestAndValidate<ManualSearchResult>(HttpMethod.Get);
+
+            return await this.httpRequestBuilder.RequestAndValidateAsync<ManualSearchResult>(
+                HttpMethod.Get,
+                UrlBuilder.Get(url, queryValues));
         }
         
         private static class ParameterKeys

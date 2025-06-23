@@ -1,156 +1,168 @@
-﻿namespace ModulDengi.Cli
+﻿namespace ModulDengi.Cli;
+
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+
+using CommandLine;
+
+using Common.DI;
+using Common.Http;
+using Common.Serialization.Json;
+using Common.System;
+using Common.System.Collections;
+
+using FreedomFinanceBank.Integration;
+
+using Kontur.Elba.Integration;
+
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
+using ModulDengi.Contracts;
+using ModulDengi.Integration;
+using ModulDengi.Integration.Contracts;
+
+using ZenMoney.Integration;
+
+internal class Program
 {
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-
-    using CommandLine;
-
-    using Common.Http;
-    using Common.Serialization.Json;
-    using Common.System;
-    using Common.System.Collections;
-
-    using FreedomFinanceBank.Integration;
-
-    using Kontur.Elba.Integration;
-
-    using Microsoft.Extensions.DependencyInjection;
-    using Microsoft.Extensions.Options;
-
-    using ModulDengi.Contracts;
-    using ModulDengi.Integration;
-    using ModulDengi.Integration.Contracts;
-
-    using ZenMoney.Integration;
-
-    internal static class Program
+    private static async Task Main(string[] args)
     {
-        private static void Main(string[] args)
+        await _ParseArgumentsAndRun<LauncherParameters>(args, parameters => _Run(parameters, args));
+    }
+
+    private static async Task _Run(LauncherParameters launcherParameters, string[] args)
+    {
+        //TextWriter oldOut = Console.Out;
+        const string LogFilePath = "./run.log";
+
+        Console.WriteLine($@"Console log will be redirected to file {LogFilePath}");
+
+        using var fileStream = new FileStream(LogFilePath, FileMode.Create, FileAccess.Write);
+        using var writer = new StreamWriter(fileStream);
+        Console.SetOut(writer);
+
+        switch (launcherParameters.ConvertFrom)
         {
-            ParseArgumentsAndRun<LauncherParameters>(args, parameters => Run(parameters, args));
+            case DataSourceType.ModulDengi:
+                await _ParseArgumentsSetUpAndRun<ModulDengiParameters>(args, _HandleModulDengi);
+                break;
+            case DataSourceType.FreedomFinanceBank:
+                await _ParseArgumentsSetUpAndRun<FreedomFinanceBankParameters>(args, _HandleFreedomFinanceBank);
+                break;
+            default:
+                throw new NotSupportedException($"{launcherParameters.ConvertFrom}");
         }
+    }
 
-        private static void Run(LauncherParameters launcherParameters, string[] args)
-        {
-            //TextWriter oldOut = Console.Out;
-            const string LogFilePath = "./run.log";
+    private static async Task _ParseArgumentsAndRun<TParam>(IEnumerable<string> args, Func<TParam, Task> action)
+    {
+        using var parser = new Parser(settings => { settings.IgnoreUnknownArguments = true; });
+        var parserResult = parser.ParseArguments<TParam>(args);
+        await parserResult.WithParsedAsync(action);
+        parserResult.WithNotParsed(errors => Console.WriteLine(
+            errors.Select(e => $"{e.GetType().Name}: {e.ToJson()}").JoinToString(Environment.NewLine)));
+    }
 
-            Console.WriteLine($@"Console log will be redirected to file {LogFilePath}");
+    private static async Task _ParseArgumentsSetUpAndRun<TParam>(
+        IEnumerable<string> args,
+        Func<TParam, Lazy<ServiceProvider>, IServiceCollection, Task> action)
+    {
+        var serviceCollection = new ServiceCollection().AddOptions();
+        serviceCollection.AddTransient(typeof(Lazy<>), typeof(Lazier<>));
 
-            using var fileStream = new FileStream(LogFilePath, FileMode.Create, FileAccess.Write);
-            using var writer = new StreamWriter(fileStream);
-            Console.SetOut(writer);
+        _SetUpLogging(serviceCollection);
 
-            switch (launcherParameters.ConvertFrom)
+        serviceCollection.AddTransient<IHttpRequestBuilder, HttpRequestBuilder>();
+
+        await _ParseArgumentsAndRun<TParam>(
+            args,
+            parameters => action(
+                parameters,
+                LazyExtensions.InitLazy(() => serviceCollection.BuildServiceProvider()),
+                serviceCollection));
+    }
+
+    private static async Task _HandleModulDengi(
+        ModulDengiParameters parameters,
+        Lazy<ServiceProvider> serviceProvider,
+        IServiceCollection serviceCollection)
+    {
+        var config = CreateModulDengiAccessConfig();
+
+        serviceCollection.AddSingleton(Options.Create(config)).AddTransient<IModulDengiApi, ModulDengiApi>();
+
+        var api = serviceProvider.Value.GetRequiredService<IModulDengiApi>();
+        var accountStatements =
+            (await api.GetAccountStatements(config.MyCompanyId, dateSince: parameters.DateSince))!.OrderBy(x =>
+                x.CreatedAt);
+
+        var items = parameters.ConvertTo switch
             {
-                case DataSourceType.ModulDengi:
-                    ParseArgumentsSetUpAndRun<ModulDengiParameters>(
-                        args,
-                        HandleModulDengi);
-                    break;
-                case DataSourceType.FreedomFinanceBank:
-                    ParseArgumentsSetUpAndRun<FreedomFinanceBankParameters>(
-                        args,
-                        HandleFreedomFinanceBank);
-                    break;
-                default:
-                    throw new NotSupportedException($"{launcherParameters.ConvertFrom}");
-            }
+                DataSourceType.Elba => ModulDengiToElbaConverter.ConvertToJsFetchRequest(accountStatements),
+                DataSourceType.ZenMoney => ZenMoneyConverter.ConvertToJsFetchRequest(accountStatements),
+                _ => throw new NotSupportedException($"{parameters.ConvertTo}")
+            };
+        foreach (var item in items)
+        {
+            Console.WriteLine(item);
         }
 
-        private static void ParseArgumentsAndRun<TParam>(IEnumerable<string> args, Action<TParam> action)
-        {
-            using var parser = new Parser(settings => { settings.IgnoreUnknownArguments = true; });
-            var parserResult = parser.ParseArguments<TParam>(args);
-            parserResult.WithParsed(action);
-            parserResult.WithNotParsed(
-                errors => Console.WriteLine(
-                    errors.Select(e => $"{e.GetType().Name}: {e.ToJson()}").JoinToString(Environment.NewLine)));
-        }
+        return;
 
-        private static void ParseArgumentsSetUpAndRun<TParam>(
-            IEnumerable<string> args,
-            Action<TParam, Lazy<ServiceProvider>, IServiceCollection> action)
-        {
-            var serviceCollection = new ServiceCollection().AddOptions()
-                .AddTransient<HttpRequestBuilder>();
-
-            ParseArgumentsAndRun<TParam>(
-                args,
-                parameters => action(
-                    parameters,
-                    LazyExtensions.InitLazy(() => serviceCollection.BuildServiceProvider()),
-                    serviceCollection));
-        }
-
-        private static void HandleModulDengi(
-            ModulDengiParameters parameters,
-            Lazy<ServiceProvider> serviceProvider,
-            IServiceCollection serviceCollection)
-        {
-            var config = CreateModulDengiAccessConfig();
-
-            serviceCollection.AddSingleton(Options.Create(config)).AddTransient<IModulDengiApi, ModulDengiApi>();
-
-            var accountStatements = serviceProvider.Value.GetRequiredService<IModulDengiApi>()
-                .GetAccountStatements(config.MyCompanyId, dateSince: parameters.DateSince).OrderBy(x => x.CreatedAt);
-
-            var items = parameters.ConvertTo switch
+        ModulDengiAccessConfig CreateModulDengiAccessConfig() =>
+            new()
                 {
-                    DataSourceType.Elba => ModulDengiToElbaConverter.ConvertToJsFetchRequest(accountStatements),
-                    DataSourceType.ZenMoney => ZenMoneyConverter.ConvertToJsFetchRequest(accountStatements),
-                    _ => throw new NotSupportedException($"{parameters.ConvertTo}")
+                    SiteUrl = parameters.Uri,
+                    MyCompanyId = parameters.CompanyId,
+                    Credential = new Credential
+                        {
+                            Login = parameters.Login,
+                            Password = parameters.Password
+                        }
                 };
-            foreach (var item in items)
-            {
-                Console.WriteLine(item);
-            }
+    }
 
-            return;
-
-            ModulDengiAccessConfig CreateModulDengiAccessConfig() =>
-                new()
-                    {
-                        SiteUrl = parameters.Uri,
-                        MyCompanyId = parameters.CompanyId,
-                        Credential = new Credential
-                            {
-                                Login = parameters.Login,
-                                Password = parameters.Password
-                            }
-                    };
-        }
-        
-        /// <summary>
-        /// 1 download PDF statement from FFIN mobile application
-        /// 2 convert the PDF to XLSX
-        /// open https://www.adobe.com/acrobat/online/pdf-to-excel.html in a browser with the incognito mode
-        /// </summary>
-        /// <param name="parameters"></param>
-        /// <param name="serviceProvider"></param>
-        /// <param name="serviceCollection"></param>
-        /// <exception cref="NotSupportedException"></exception>
-        private static void HandleFreedomFinanceBank(
-            FreedomFinanceBankParameters parameters,
-            Lazy<ServiceProvider> serviceProvider,
-            IServiceCollection serviceCollection)
+    /// <summary>
+    /// 1 download PDF statement from FFIN mobile application
+    /// 2 convert the PDF to XLSX
+    /// open https://www.adobe.com/acrobat/online/pdf-to-excel.html in a browser with the incognito mode
+    /// </summary>
+    /// <param name="parameters"></param>
+    /// <param name="serviceProvider"></param>
+    /// <param name="serviceCollection"></param>
+    /// <exception cref="NotSupportedException"></exception>
+    private static Task _HandleFreedomFinanceBank(
+        FreedomFinanceBankParameters parameters,
+        Lazy<ServiceProvider> serviceProvider,
+        IServiceCollection serviceCollection)
+    {
+        switch (parameters.ConvertTo)
         {
-            switch (parameters.ConvertTo)
-            {
-                case DataSourceType.ZenMoney:
-                    var transactions = ExcelStatementReader.Extract(parameters.InputFilePath).ToArray();
+            case DataSourceType.ZenMoney:
+                var transactions = ExcelStatementReader.Extract(parameters.InputFilePath).ToArray();
 
-                    foreach (var item in ZenMoneyConverter.ConvertToJsFetchRequest(transactions))
-                    {
-                        Console.WriteLine(item);
-                    }
-                    break;
-                default:
-                    throw new NotSupportedException($"{nameof(HandleFreedomFinanceBank)} {parameters.ConvertTo}");
-            }
-            
+                foreach (var item in ZenMoneyConverter.ConvertToJsFetchRequest(transactions))
+                {
+                    Console.WriteLine(item);
+                }
+
+                break;
+            default:
+                throw new NotSupportedException($"{nameof(_HandleFreedomFinanceBank)} {parameters.ConvertTo}");
         }
+        return Task.CompletedTask;
+    }
+
+    private static void _SetUpLogging(IServiceCollection serviceCollection)
+    {
+        var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Trace));
+
+        serviceCollection.AddSingleton(loggerFactory).AddTransient(typeof(ILogger<>), typeof(Logger<>))
+            .AddTransient<ILogger>(_ => loggerFactory.CreateLogger<Program>());
     }
 }
