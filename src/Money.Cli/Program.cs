@@ -1,4 +1,4 @@
-﻿namespace ModulDengi.Cli;
+﻿namespace Money.Cli;
 
 using System;
 using System.Collections.Generic;
@@ -42,8 +42,8 @@ internal class Program
 
         Console.WriteLine($@"Console log will be redirected to file {LogFilePath}");
 
-        using var fileStream = new FileStream(LogFilePath, FileMode.Create, FileAccess.Write);
-        using var writer = new StreamWriter(fileStream);
+        await using var fileStream = new FileStream(LogFilePath, FileMode.Create, FileAccess.Write);
+        await using var writer = new StreamWriter(fileStream);
         Console.SetOut(writer);
 
         switch (launcherParameters.ConvertFrom)

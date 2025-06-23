@@ -52,7 +52,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kontur.Elba.Integration.Con
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Money", "Money", "{957E7432-5A5F-4CB8-8178-50E681ABE37E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModulDengi.Cli", "src\ModulDengi.Cli\ModulDengi.Cli.csproj", "{4F9F8F5E-A794-45E6-999D-CE480C2006A1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Money.Cli", "src\Money.Cli\Money.Cli.csproj", "{4F9F8F5E-A794-45E6-999D-CE480C2006A1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spain.Appointment.Utility", "src\Spain.Appointment.Utility\Spain.Appointment.Utility.csproj", "{0F709603-C3C7-48BE-B64A-6815D7B45C2B}"
 EndProject
