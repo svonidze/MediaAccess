@@ -1,4 +1,4 @@
-namespace ModulDengi.Cli;
+namespace Money.Cli;
 
 enum DataSourceType
 {
