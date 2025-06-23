@@ -1,16 +1,18 @@
 namespace ModulDengi.Contracts
 {
+    using System.Threading.Tasks;
+
     using Common.Results;
 
     public interface IModulDengiClient
     {
-        Project[] GetProjectsRisingFunds();
+        Task<Project[]?> GetProjectsRisingFunds();
 
-        double GetMyFreeMoneyAmount();
+        Task<double> GetMyFreeMoneyAmount();
 
-        Result<Investment> StartInvestmentFLow(Project project, in double amount);
+        Task<Result<Investment>> StartInvestmentFlow(Project project, double amount);
 
-        Result ConfirmInvestment(string investmentId, string confirmationCode);
+        Task<Result> ConfirmInvestment(string investmentId, string confirmationCode);
 
         bool IsApiAvailable(out string? reason);
     }

@@ -73,7 +73,7 @@
                 try
                 {
                     this.logger.LogDebug("Checking for new projects.");
-                    var projects = this.client.GetProjectsRisingFunds();
+                    var projects = await this.client.GetProjectsRisingFunds();
                     if (projects.Any())
                     {
                         var notInvestedYetProjects = projects.Where(p => p.MyInvestmentAmount == 0).ToArray();
@@ -98,7 +98,7 @@
 
         private async Task OnProjectsRisingFundsDetected(CancellationToken stoppingToken, Project project)
         {
-            var myAvailableMoney = this.client.GetMyFreeMoneyAmount();
+            var myAvailableMoney = await this.client.GetMyFreeMoneyAmount();
 
             if (!this.accountant.IsPossibleToInvest(
                 myAvailableMoney,
@@ -112,11 +112,11 @@
             this.logger.LogInformation($"{investingMoneyAmount} is approved to be invested into project {project.ToJson()}.");
 
             var startTime = DateTime.UtcNow;
-            var newInvestmentResponse = this.client.StartInvestmentFLow(project, investingMoneyAmount);
+            var newInvestmentResponse = await this.client.StartInvestmentFlow(project, investingMoneyAmount);
             if (!newInvestmentResponse.Success)
             {
                 this.logger.LogCritical(
-                    $"{nameof(this.client.StartInvestmentFLow)} was not finished successfully, due to {newInvestmentResponse.Message}");
+                    $"{nameof(this.client.StartInvestmentFlow)} was not finished successfully, due to {newInvestmentResponse.Message}");
                 return;
             }
 
@@ -151,7 +151,7 @@
                 return;
             }
 
-            var confirmInvestmentResult = this.client.ConfirmInvestment(
+            var confirmInvestmentResult = await this.client.ConfirmInvestment(
                 newInvestmentResponse.Value.Id,
                 confirmationCode);
 
