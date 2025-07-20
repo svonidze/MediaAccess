@@ -15,7 +15,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		Dockerfile = Dockerfile
 		MediaAccess.sln.DotSettings = MediaAccess.sln.DotSettings
-		MediaAccess.sln.DotSettings.user = MediaAccess.sln.DotSettings.user
 		Sbeep.DotSettings = Sbeep.DotSettings
 		.gitignore = .gitignore
 		.dockerignore = .dockerignore
