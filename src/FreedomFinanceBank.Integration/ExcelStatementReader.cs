@@ -6,24 +6,25 @@ using Common.System.Collections;
 
 using FreedomFinanceBank.Contracts;
 
-public static class ExcelStatementReader
-{
-    private const int FirstRow = 3;
+using Microsoft.Extensions.Logging;
 
+public class ExcelStatementReader(ILogger<ExcelStatementReader> logger)
+{
     private const SpreadsheetColumns LastColumn = SpreadsheetColumns.Z;
 
-    public static IEnumerable<Transaction> Extract(string fileName)
+    public IEnumerable<Transaction> Extract(string fileName, int skipFirstRow = 3)
     {
+        logger.LogInformation("Extracting transactions from {FileName}", fileName);
         using var fileStream = File.OpenRead(fileName);
         var reader = new SpreadsheetReader(fileStream);
         var sheet = reader.Read().AllowVerboseException().Single();
 
+        var transactionCount = 0;
         foreach (var row in sheet.Cells.GroupBy(c => c.Row))
         {
-            if (row.Key <= FirstRow) continue;
+            if (row.Key <= skipFirstRow) continue;
 
-            var rowCells = row
-                .Where(c => c.Column <= LastColumn)
+            var rowCells = row.Where(c => c.Column <= LastColumn)
                 .GroupBy(r => r.Column)
                 .ToDictionary(r => r.Key, r => r.Single().Text);
             var keepWorking = _TryExtract(rowCells, out var transaction);
@@ -34,9 +35,12 @@ public static class ExcelStatementReader
 
             if (transaction is not null)
             {
+                transactionCount++;
                 yield return transaction;
             }
         }
+
+        logger.LogInformation("Extracted {TransactionCount} transactions from {FileName}", transactionCount, fileName);
     }
 
     private static bool _TryExtract(

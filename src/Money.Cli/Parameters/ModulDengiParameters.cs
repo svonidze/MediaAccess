@@ -1,14 +1,8 @@
-namespace Money.Cli;
+namespace Money.Cli.Parameters;
 
 using System;
 
 using CommandLine;
-
-internal class LauncherParameters
-{
-    [Option("convert-from", Required = true)]
-    public DataSourceType ConvertFrom { get; set; }
-}
 
 internal class ModulDengiParameters
 {
@@ -29,13 +23,4 @@ internal class ModulDengiParameters
 
     [Option("since", Required = true)]
     public DateTime DateSince { get; set; }
-}
-
-internal class FreedomFinanceBankParameters
-{
-    [Option("convert-to", Required = true)]
-    public DataSourceType ConvertTo { get; set; }
-    
-    [Option("input-file-path", Required = true)]
-    public string InputFilePath { get; set; } = null!;
 }
