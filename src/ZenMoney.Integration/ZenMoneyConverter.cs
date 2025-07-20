@@ -16,32 +16,14 @@ using ModulDengi.Contracts;
 using ModulDengi.Core;
 using ModulDengi.Integration.Contracts.Responses;
 
+using FreedomFinanceTransaction = FreedomFinanceBank.Contracts.Transaction;
+using ZenMoneyTransaction = ZenMoney.Integration.Contracts.Types.Transaction;
+
 public static class ZenMoneyConverter
 {
     private const string DateFormat = "dd.MM.yyyy";
 
-    private static readonly Dictionary<string,object> Headers = new()
-        {
-            { "accept", "*/*" },
-            { "accept-language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7" },
-            { "content-type", "application/x-www-form-urlencoded" },
-            { "sec-ch-ua", "\"Google Chrome\";v=\"87\", \" Not;A Brand\";v=\"99\", \"Chromium\";v=\"87\"" },
-            { "sec-ch-ua-mobile", "?0" },
-            { "sec-fetch-dest", "empty" },
-            { "sec-fetch-mode", "cors" },
-            { "sec-fetch-site", "same-origin" },
-            { "x-requested-with", "XMLHttpRequest" },
-        };
-
-    public static IEnumerable<string> ConvertToJsFetchRequest(
-        IEnumerable<AccountStatementResponse> accountStatements) =>
-        _ConvertToTransactions(accountStatements).Select(transaction => _WrapToFetch(transaction));
-        
-    public static IEnumerable<string> ConvertToJsFetchRequest(
-        IEnumerable<Transaction> transactions) =>
-        ConvertToTransactions(transactions).Select(transaction => _WrapToFetch(transaction));
-
-    private static IEnumerable<Contracts.Types.Transaction> _ConvertToTransactions(
+    public static IEnumerable<ZenMoneyTransaction> ConvertToTransactions(
         IEnumerable<AccountStatementResponse> accountStatements) =>
         accountStatements
             .Select(
@@ -132,12 +114,12 @@ public static class ZenMoneyConverter
                         return transaction;
                     });
 
-    public static IEnumerable<Contracts.Types.Transaction> ConvertToTransactions(
-        IEnumerable<Transaction> transactions)
+    public static IEnumerable<ZenMoneyTransaction> ConvertToTransactions(
+        IEnumerable<FreedomFinanceTransaction> transactions)
     {
         foreach (var sourceTransaction in transactions)
         {
-            var transaction = new Contracts.Types.Transaction
+            var transaction = new ZenMoneyTransaction
                 {
                     Category = Constants.ZeroValue,
                     Comment = sourceTransaction.Description,
@@ -167,21 +149,6 @@ public static class ZenMoneyConverter
                 
             yield return transaction;
         }
-    }
-        
-    private static string _WrapToFetch(params Contracts.Types.Transaction[] transactions)
-    {
-        var parameters = new Dictionary<string, object>
-            {
-                { "headers", Headers },
-                { "referrer", $"{Constants.ZenmoneyUrl}/a/" },
-                { "referrerPolicy", "strict-origin-when-cross-origin" },
-                { "body", transactions.ToJson() },
-                { "method", "PUT" },
-                { "mode", "cors" },
-                { "credentials", "include" },
-            };
-        return $"await fetch(\"{Constants.ZenmoneyApiUrl}\", {parameters.ToJsonIndented()});";
     }
         
     private static string _GetFormattedAmount(double value) =>

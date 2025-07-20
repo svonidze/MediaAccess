@@ -15,8 +15,15 @@ using ZenMoney.Integration.Contracts.Types;
 
 namespace ZenMoney.Integration;
 
-public class ZenMoneyClient(ILogger logger, IHttpRequestBuilder httRequestBuilder, string cookie)
+using Microsoft.Extensions.Options;
+
+public class ZenMoneyClient(
+    IOptions<IZenMoneyConfiguration> config,
+    ILogger logger,
+    IHttpRequestBuilder httRequestBuilder)
 {
+    public delegate TransactionFilter GetTransactionFilterDelegate(int skip);
+    
     private const string HostUrl = "https://zenmoney.ru";
 
     private const string ApiV2Url = $"{HostUrl}/api/v2";
@@ -53,7 +60,7 @@ public class ZenMoneyClient(ILogger logger, IHttpRequestBuilder httRequestBuilde
         return await httRequestBuilder.RequestAndValidateAsync<Transaction[]>(
             HttpMethod.Get,
             uri,
-            this._ConfigureRequest);
+            _ConfigureRequest);
     }
     
     public async Task<Dictionary<int, Connector>?> FetchConnectors()
@@ -61,12 +68,12 @@ public class ZenMoneyClient(ILogger logger, IHttpRequestBuilder httRequestBuilde
         return await httRequestBuilder.RequestAndValidateAsync<Dictionary<int, Connector>>(
             HttpMethod.Get,
             $"{ApiS1Url}/connector/",
-            this._ConfigureRequest);
+            _ConfigureRequest);
     }
 
     private void _ConfigureRequest(HttpRequestMessage request)
     {
-        request.Headers.Add("cookie", cookie);
+        request.Headers.Add("cookie", config.Value.Cookie);
         foreach (var header in Headers)
         {
             request.Headers.TryAddWithoutValidation(header.Key, header.Value);
@@ -84,14 +91,14 @@ public class ZenMoneyClient(ILogger logger, IHttpRequestBuilder httRequestBuilde
             url,
             request =>
                 {
-                    this._ConfigureRequest(request);
+                    _ConfigureRequest(request);
                     request.SetContent(new StringContent(transaction.ToJson(), Encoding.UTF8, "application/json"));
                 });
 
         return response;
     }
-
-    public async Task FindAndUpdateAllTransactions(Func<int, TransactionFilter> getTransactionFilter, Action<Transaction> update)
+    
+    public async Task FindAndUpdateAllTransactions(GetTransactionFilterDelegate getTransactionFilter, Action<Transaction> update)
     {
         var skip = 0;
         while (true)
@@ -149,5 +156,26 @@ public class ZenMoneyClient(ILogger logger, IHttpRequestBuilder httRequestBuilde
             // Increment for the next batch
             skip += limit;
         }
+    }
+
+    public async Task CreateTransactions(params Transaction[] transactions)
+    {
+        foreach (var transaction in transactions)
+        {
+            await CreateTransaction(transaction);
+        }
+    }
+
+    public async Task CreateTransaction(Transaction transaction)
+    {
+        var url = $"{ApiV2Url}/transaction/";
+        var response = await httRequestBuilder.RequestAndValidateAsync<Dictionary<string, object>>(
+            HttpMethod.Put,
+            url,
+            request =>
+                {
+                    _ConfigureRequest(request);
+                    request.SetContent(new StringContent(transaction.ToJson(), Encoding.UTF8, "application/json"));
+                });
     }
 }
