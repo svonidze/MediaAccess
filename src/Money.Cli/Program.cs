@@ -2,14 +2,16 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 using CommandLine;
 
 using Common.DI;
+using Common.DI.Contracts;
 using Common.Http;
+using Common.Reflection;
 using Common.Serialization.Json;
 using Common.System;
 using Common.System.Collections;
@@ -26,26 +28,21 @@ using ModulDengi.Contracts;
 using ModulDengi.Integration;
 using ModulDengi.Integration.Contracts;
 
+using Money.Cli.Parameters;
+
 using ZenMoney.Integration;
+
+using Constants = ZenMoney.Integration.Constants;
 
 internal class Program
 {
     private static async Task Main(string[] args)
     {
-        await _ParseArgumentsAndRun<LauncherParameters>(args, parameters => _Run(parameters, args));
+        await _ParseArgumentsAndRun<DefaultParameters>(args, parameters => _Run(parameters, args));
     }
 
-    private static async Task _Run(LauncherParameters launcherParameters, string[] args)
+    private static async Task _Run(DefaultParameters launcherParameters, string[] args)
     {
-        //TextWriter oldOut = Console.Out;
-        const string LogFilePath = "./run.log";
-
-        Console.WriteLine($@"Console log will be redirected to file {LogFilePath}");
-
-        await using var fileStream = new FileStream(LogFilePath, FileMode.Create, FileAccess.Write);
-        await using var writer = new StreamWriter(fileStream);
-        Console.SetOut(writer);
-
         switch (launcherParameters.ConvertFrom)
         {
             case DataSourceType.ModulDengi:
@@ -53,6 +50,9 @@ internal class Program
                 break;
             case DataSourceType.FreedomFinanceBank:
                 await _ParseArgumentsSetUpAndRun<FreedomFinanceBankParameters>(args, _HandleFreedomFinanceBank);
+                break;
+            case DataSourceType.ZenMoney:
+                await _ParseArgumentsSetUpAndRun<ZenMoneyParameters>(args, _HandleZenMoney);
                 break;
             default:
                 throw new NotSupportedException($"{launcherParameters.ConvertFrom}");
@@ -73,17 +73,26 @@ internal class Program
         Func<TParam, Lazy<ServiceProvider>, IServiceCollection, Task> action)
     {
         var serviceCollection = new ServiceCollection().AddOptions();
-        serviceCollection.AddTransient(typeof(Lazy<>), typeof(Lazier<>));
+        serviceCollection.AddTransient(typeof(IFactory<>), typeof(Factory<>))
+            .AddTransient(typeof(Lazy<>), typeof(Lazier<>));
 
         _SetUpLogging(serviceCollection);
 
-        serviceCollection.AddTransient<IHttpRequestBuilder, HttpRequestBuilder>();
+        serviceCollection.AddTransient<HttpMessageHandler, HttpClientHandler>()
+            .AddTransient<LoggingHandler>()
+            .AddTransient<HttpClient>(provider => new HttpClient(provider.GetRequiredService<LoggingHandler>()))
+            .AddTransient<IHttpRequestBuilder, HttpRequestBuilder>();
 
+        serviceCollection.AddTransient<ZenMoneyClient>();
+        serviceCollection.AddTransient<ExcelStatementReader>();
+        
+        var serviceProviderLazy = LazyExtensions.InitLazy(() => serviceCollection.BuildServiceProvider());
+        
         await _ParseArgumentsAndRun<TParam>(
             args,
             parameters => action(
                 parameters,
-                LazyExtensions.InitLazy(() => serviceCollection.BuildServiceProvider()),
+                serviceProviderLazy,
                 serviceCollection));
     }
 
@@ -104,7 +113,7 @@ internal class Program
         var items = parameters.ConvertTo switch
             {
                 DataSourceType.Elba => ModulDengiToElbaConverter.ConvertToJsFetchRequest(accountStatements),
-                DataSourceType.ZenMoney => ZenMoneyConverter.ConvertToJsFetchRequest(accountStatements),
+                // DataSourceType.ZenMoney => ZenMoneyConverter.ConvertToJsFetchRequest(accountStatements),
                 _ => throw new NotSupportedException($"{parameters.ConvertTo}")
             };
         foreach (var item in items)
@@ -136,25 +145,56 @@ internal class Program
     /// <param name="serviceProvider"></param>
     /// <param name="serviceCollection"></param>
     /// <exception cref="NotSupportedException"></exception>
-    private static Task _HandleFreedomFinanceBank(
+    private static async Task _HandleFreedomFinanceBank(
         FreedomFinanceBankParameters parameters,
         Lazy<ServiceProvider> serviceProvider,
         IServiceCollection serviceCollection)
     {
+        serviceCollection.PostConfigure<ZenMoneyConfiguration>(
+            options =>
+                {
+                    options.LogAndUpdatePropertiesOf<IZenMoneyConfiguration>(
+                        parameters,
+                        serviceProvider.Value.GetRequiredService<ILogger<ZenMoneyParameters>>(),
+                        ignoreNullValues: true);
+                });
+        
         switch (parameters.ConvertTo)
         {
             case DataSourceType.ZenMoney:
-                var transactions = ExcelStatementReader.Extract(parameters.InputFilePath).ToArray();
+                var excelStatementReader = serviceProvider.Value.GetRequiredService<ExcelStatementReader>();
+                var ffinTransactions = excelStatementReader.Extract(parameters.InputFilePath).ToArray();
+                var zenMoneyClient = serviceProvider.Value.GetRequiredService<ZenMoneyClient>();
 
-                foreach (var item in ZenMoneyConverter.ConvertToJsFetchRequest(transactions))
+                foreach (var transaction in ZenMoneyConverter.ConvertToTransactions(
+                             ffinTransactions,
+                             accountId: Constants.Wallets.FreedomFinanceBank.Eur))
                 {
-                    Console.WriteLine(item);
+                    await zenMoneyClient.CreateTransaction(transaction);
                 }
 
                 break;
             default:
                 throw new NotSupportedException($"{nameof(_HandleFreedomFinanceBank)} {parameters.ConvertTo}");
         }
+    }
+
+    private static Task _HandleZenMoney(
+        ZenMoneyParameters parameters,
+        Lazy<ServiceProvider> serviceProvider,
+        IServiceCollection serviceCollection)
+    {
+        serviceCollection.PostConfigure<ZenMoneyConfiguration>(
+            options =>
+                {
+                    options.LogAndUpdatePropertiesOf<IZenMoneyConfiguration>(
+                        parameters,
+                        serviceProvider.Value.GetRequiredService<ILogger<ZenMoneyParameters>>(),
+                        ignoreNullValues: true);
+                });
+        
+        var zenMoneyClient = serviceProvider.Value.GetRequiredService<ZenMoneyClient>();
+        throw new NotImplementedException();
         return Task.CompletedTask;
     }
 
@@ -162,7 +202,9 @@ internal class Program
     {
         var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Trace));
 
-        serviceCollection.AddSingleton(loggerFactory).AddTransient(typeof(ILogger<>), typeof(Logger<>))
+        serviceCollection
+            .AddSingleton(loggerFactory)
+            .AddTransient(typeof(ILogger<>), typeof(Logger<>))
             .AddTransient<ILogger>(_ => loggerFactory.CreateLogger<Program>());
     }
 }
