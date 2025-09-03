@@ -166,6 +166,8 @@ internal class Program
                 var ffinTransactions = excelStatementReader.Extract(parameters.InputFilePath).ToArray();
                 var zenMoneyClient = serviceProvider.Value.GetRequiredService<ZenMoneyClient>();
 
+                // TODO move to dedicated class/file
+                // TODO log total number of transactions and the current index
                 foreach (var transaction in ZenMoneyConverter.ConvertToTransactions(
                              ffinTransactions,
                              accountId: Constants.Wallets.FreedomFinanceBank.Eur))
