@@ -3,5 +3,7 @@ python3 caixa_bank.py \
     --contract 961318951308030 \
     --start 20250901 --end 20250907 \
     --format E \
+    --verbose \
+    --dump-bodies \
     --cookie-file cookies.txt \
     --output movimientos.xls

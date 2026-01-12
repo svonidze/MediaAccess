@@ -53,6 +53,49 @@ BINARY_CONTENT_TYPES = {
 }
 
 
+def redact_header_value(name: str, value: str) -> str:
+    n = name.lower()
+    if n == "cookie":
+        # Do not print full cookies
+        if not value:
+            return value
+        if len(value) > 32:
+            return value[:32] + "... (redacted)"
+        return "(redacted)"
+    return value
+
+
+def print_headers(headers: Dict[str, str], prefix: str = "  ") -> None:
+    for k, v in headers.items():
+        safe_v = redact_header_value(k, v)
+        print(f"{prefix}{k}: {safe_v}")
+
+
+def print_request_log(method: str, url: str, headers: Dict[str, str], form: Optional[Dict[str, str]] = None) -> None:
+    print(f"REQUEST {method} {url}")
+    print_headers(headers)
+    if form is not None:
+        # Show urlencoded representation to match actual payload
+        encoded = urllib.parse.urlencode(form)
+        print(f"  Body (urlencoded): {encoded}")
+
+
+def print_response_log(label: str, status: int, url: str, headers: Dict[str, str], body_len: Optional[int] = None) -> None:
+    print(f"RESPONSE {label} status={status} url={url}")
+    print_headers(headers)
+    if body_len is not None:
+        print(f"  Body bytes: {body_len}")
+
+
+def enable_http_debug() -> None:
+    # Enable urllib wire logging
+    opener = urllib.request.build_opener(
+        urllib.request.HTTPHandler(debuglevel=1),
+        urllib.request.HTTPSHandler(debuglevel=1),
+    )
+    urllib.request.install_opener(opener)
+
+
 def parse_kv_header_pairs(pairs: Optional[list[str]]) -> Dict[str, str]:
     headers: Dict[str, str] = {}
     if not pairs:
@@ -99,7 +142,7 @@ def pick_output_filename(disposition: Optional[str], default_name: str) -> str:
         return default_name
     # Try to parse filename from Content-Disposition
     # e.g. attachment; filename="movimientos.xls"
-    m = re.search(r'filename\*=UTF-8''([^;\r\n]+)', disposition)
+    m = re.search(r"filename\*=UTF-8''([^;\r\n]+)", disposition)
     if m:
         return urllib.parse.unquote(m.group(1))
     m2 = re.search(r'filename\s*=\s*"?([^";\r\n]+)"?', disposition)
@@ -124,16 +167,22 @@ def extract_first_url_from_text(text: str) -> Optional[str]:
     return None
 
 
-def download_url(url: str, headers: Dict[str, str]) -> Tuple[bytes, Dict[str, str]]:
+def download_url(url: str, headers: Dict[str, str], verbose: bool = False) -> Tuple[bytes, Dict[str, str], int, str]:
     req = urllib.request.Request(url=url, method="GET")
     for k, v in headers.items():
         if k.lower() == "content-type":
             continue  # not needed for GET
         req.add_header(k, v)
+    if verbose:
+        print_request_log("GET", url, headers)
     with urllib.request.urlopen(req) as resp:
         body = resp.read()
         resp_headers = {k: v for k, v in resp.headers.items()}
-        return body, resp_headers
+        status = getattr(resp, 'status', None) or resp.getcode()
+        final_url = resp.geturl()
+    if verbose:
+        print_response_log("GET", status, final_url, resp_headers, body_len=len(body))
+    return body, resp_headers, status, final_url
 
 
 def main(argv: Optional[list[str]] = None) -> int:
@@ -155,8 +204,13 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     ap.add_argument("--output", default=None, help="Output filename. If absent, use server-suggested name or movimientos.xls/pdf")
     ap.add_argument("--dry-run", action="store_true", help="Build and print the request but do not perform network IO")
+    ap.add_argument("--verbose", action="store_true", help="Print full request/response details and enable HTTP debug logs")
+    ap.add_argument("--dump-bodies", action="store_true", help="Dump raw POST/GET response bodies to <output>.(post|get).bin")
 
     args = ap.parse_args(argv)
+
+    if args.verbose:
+        enable_http_debug()
 
     # Prepare cookies
     cookie_value: Optional[str] = args.cookie
@@ -196,6 +250,9 @@ def main(argv: Optional[list[str]] = None) -> int:
         "FLAG_TARJETAS_CANCELADAS": str(args.flag_cancelled),
     }
 
+    # Choose default output name based on requested format
+    default_name = "movimientos.xls" if args.format == "E" else "movimientos.pdf"
+
     if args.dry_run:
         print("[DRY RUN] URL:", url)
         print("[DRY RUN] Headers:")
@@ -210,6 +267,8 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     # Perform POST
     req = build_request(url, form, headers)
+    if args.verbose:
+        print_request_log("POST", url, headers, form)
     try:
         with urllib.request.urlopen(req) as resp:
             post_body: bytes = resp.read()
@@ -220,13 +279,26 @@ def main(argv: Optional[list[str]] = None) -> int:
         print("Request failed:", e, file=sys.stderr)
         return 2
 
+    if args.verbose:
+        print_response_log("POST", status, final_url, resp_headers, body_len=len(post_body))
+
     print(f"POST status: {status}; final URL: {final_url}")
+
+    # Optional: dump POST body
+    if args.dump_bodies:
+        base_name = args.output or default_name
+        try:
+            with open(base_name + ".post.bin", "wb") as f:
+                f.write(post_body)
+            if args.verbose:
+                print(f"Dumped POST body to {base_name}.post.bin")
+        except Exception as e:
+            print(f"Warning: could not dump POST body: {e}")
 
     # Check if server already returned the file
     content_type = resp_headers.get("Content-Type")
     content_disp = resp_headers.get("Content-Disposition")
 
-    default_name = "movimientos.xls" if args.format == "E" else "movimientos.pdf"
     out_name = args.output or pick_output_filename(content_disp, default_name)
 
     if is_binary_content(content_type) or content_disp:
@@ -248,7 +320,7 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     print(f"Attempting download from: {next_url}")
     try:
-        file_bytes, get_headers = download_url(next_url, headers)
+        file_bytes, get_headers, get_status, get_final_url = download_url(next_url, headers, verbose=args.verbose)
     except Exception as e:
         # If GET also fails, save HTML of POST response for inspection
         html_dump = out_name + ".html"
@@ -257,6 +329,17 @@ def main(argv: Optional[list[str]] = None) -> int:
         print(f"Download failed: {e}")
         print(f"Saved POST response HTML to {html_dump} for inspection")
         return 3
+
+    # Optionally: dump GET body
+    if args.dump_bodies:
+        base_name = args.output or default_name
+        try:
+            with open(base_name + ".get.bin", "wb") as f:
+                f.write(file_bytes)
+            if args.verbose:
+                print(f"Dumped GET body to {base_name}.get.bin")
+        except Exception as e:
+            print(f"Warning: could not dump GET body: {e}")
 
     get_ct = get_headers.get("Content-Type")
     get_cd = get_headers.get("Content-Disposition")
