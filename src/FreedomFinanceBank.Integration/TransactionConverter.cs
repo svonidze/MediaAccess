@@ -14,7 +14,7 @@ public abstract class TransactionConverter
     private static readonly Regex TransactionRegex = new(
         "Дата\\s?транзакции:\\s(?<date>\\d{2}\\.\\d{2}\\.\\d{4}).+"
         + "Сумма\\s?транзакции:\\s?(?<amount>\\d*(\\.\\d{1,2})?)\\s?(?<currency>\\w{3})\\s?"
-        + "Операция:\\s?(Покупка|Возврат)(?<payee>.+)?" + "Учетный\\s?курс");
+        + "Операция:\\s?(Покупка|Возврат)(?<payee>.+)?" + "(Учетный\\s?курс)?");
 
     public static bool TryExtractCurrency(string accountNumber, out string? currency)
     {

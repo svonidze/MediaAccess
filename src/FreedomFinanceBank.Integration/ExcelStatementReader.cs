@@ -43,7 +43,7 @@ public class ExcelStatementReader(ILogger<ExcelStatementReader> logger)
         logger.LogInformation("Extracted {TransactionCount} transactions from {FileName}", transactionCount, fileName);
     }
 
-    private static bool _TryExtract(
+    private bool _TryExtract(
         IReadOnlyDictionary<SpreadsheetColumns, string> rowCells,
         out Transaction? transaction)
     {
@@ -59,6 +59,12 @@ public class ExcelStatementReader(ILogger<ExcelStatementReader> logger)
         decimal? amountFromText = null;
 
         var textJ = rowCells[SpreadsheetColumns.J].Trim();
+        
+        if (textJ.StartsWith("Выплата вклада с депозитного договора"))
+        {
+            transaction = null;
+            return true;
+        }
         if (textJ is "Безвозмездный перевод" or "MATERIAL AID" or "МАТЕРИАЛЬНАЯ ПОМОЩЬ")
         {
             payeeFromText = rowCells[SpreadsheetColumns.F];
@@ -75,7 +81,7 @@ public class ExcelStatementReader(ILogger<ExcelStatementReader> logger)
                      out amountFromText,
                      out currencyFromText))
         {
-            Console.WriteLine($@"Cannot parse '{textJ}'");
+            logger.LogWarning($@"Cannot parse text from column J: '{textJ}'");
             transaction = null;
             return true;
         }
