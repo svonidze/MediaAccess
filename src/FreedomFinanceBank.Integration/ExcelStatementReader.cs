@@ -63,7 +63,7 @@ public class ExcelStatementReader(ILogger<ExcelStatementReader> logger)
         if (textJ.StartsWith("Выплата вклада с депозитного договора"))
         {
             transaction = null;
-            return false;
+            return true;
         }
         if (textJ is "Безвозмездный перевод" or "MATERIAL AID" or "МАТЕРИАЛЬНАЯ ПОМОЩЬ")
         {
