@@ -85,7 +85,9 @@ public class TransactionConverterTests
                 }).Returns(true);
 
         yield return new TestCaseData(
-            "Дата транзакции: 07.02.2024 Код авторизации: 918427 Номер карты: 5269********5327 Сумма транзакции: .49 EUR "
+            "Дата транзакции: 07.02.2024 "
+            + "Код авторизации: 918427 Номер карты: 5269********5327 "
+            + "Сумма транзакции: .49 EUR "
             + "Операция: Покупка с нашей карты в чужом устройстве 244559000156182\\ARE\\amazon.es/prm\\Amazon Prime*XI4 "
             + "Учетный курс 450.34",
             new Transaction
@@ -95,6 +97,20 @@ public class TransactionConverterTests
                     CreatedAt = TransactionConverter.ConvertDate("07.02.2024"),
                     Payee = "Amazon Prime*XI4"
                 }).Returns(true).SetName("Amount .49 without 0");
+        
+        yield return new TestCaseData(
+            "Дата транзакции: 10.01.2026\n"
+            + "Код авторизации: 006302 Номер карты: 5269********5327 "
+            + "Сумма транзакции: 5 EUR "
+            + "Операция: Покупка с нашей карты в чужом устройстве 097955686\\ESP\\ANNA\n"
+            + "\\AYUNTAMIENTO DE ANNA",
+            new Transaction
+                {
+                    Amount = 5m,
+                    Currency = "EUR",
+                    CreatedAt = TransactionConverter.ConvertDate("10.01.2026"),
+                    Payee = "AYUNTAMIENTO DE ANNA"
+                }).Returns(true).SetName("no Учетный + new lines");
     }
 }
 
