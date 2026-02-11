@@ -172,10 +172,10 @@ public class ZenMoneyClient(
         }
     }
 
-    public async Task CreateTransaction(Transaction transaction)
+    public async Task<Dictionary<string, object>?> CreateTransaction(Transaction transaction)
     {
         var url = $"{ApiV2Url}/transaction/";
-        var response = await httRequestBuilder.RequestAndValidateAsync<Dictionary<string, object>>(
+        return await httRequestBuilder.RequestAndValidateAsync<Dictionary<string, object>>(
             HttpMethod.Put,
             url,
             request =>
